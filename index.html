@@ -275,9 +275,9 @@
 
 <h2>Traditional Hydrometer (SG) Calculator</h2>
 <label for="og_sg">Original Gravity (OG):</label>
-<input id="og_sg" step="0.001" type="number" value="1.065"/>
+<input id="og_sg" step="0.001" type="number" value="1.0713"/>
 <label for="fg_sg">Final Gravity (FG):</label>
-<input id="fg_sg" step="0.001" type="number" value="1.010"/>
+<input id="fg_sg" step="0.001" type="number" value="0.9985"/>
 <label for="volume_input_sg">Volume for Calorie Calculation:</label>
 <div class="volume-input-group">
     <input id="volume_input_sg" step="0.01" type="number" value="500"/>
@@ -333,7 +333,7 @@
 
 <h2>Target ABV to Sugar Requirement</h2>
 <label for="target_abv">Desired ABV (%):</label>
-<input id="target_abv" step="0.01" type="number" value="8.5"/>
+<input id="target_abv" step="0.01" type="number" value="9.55"/>
 <label for="target_volume">Batch Volume:</label>
 <div class="volume-input-group">
     <input id="target_volume" step="0.01" type="number" value="25"/>
@@ -354,7 +354,7 @@
 <h2>Priming Sugar Calculator</h2>
 <label for="prime_volume">Batch Volume:</label>
 <div class="volume-input-group">
-    <input id="prime_volume" step="0.01" type="number" value="25"/>
+    <input id="prime_volume" step="0.01" type="number" value=".500"/>
     <select id="prime_volume_unit" onchange="updatePrimeVolumeDisplay()">
         <option value="liter" selected>Liters</option>
         <option value="us_gallon">US gallons</option>
@@ -380,10 +380,10 @@
 
 <h2>Dilution Calculator</h2>
 <label for="current_abv">Current ABV (%):</label>
-<input id="current_abv" step="0.01" type="number" value="15.5"/>
+<input id="current_abv" step="0.01" type="number" value="60"/>
 <label for="current_volume">Current Volume:</label>
 <div class="volume-input-group">
-    <input id="current_volume" step="0.01" type="number" value="20"/>
+    <input id="current_volume" step="0.01" type="number" value="1"/>
     <select id="current_volume_unit" onchange="updateCurrentVolumeDisplay()">
         <option value="liter" selected>Liters</option>
         <option value="us_gallon">US gallons</option>
@@ -394,16 +394,16 @@
 </div>
 <div class="unit-note" id="current_volume_note">20 L = 5.28 US gal = 4.40 UK gal</div>
 <label for="target_abv_dilution">Target ABV (%):</label>
-<input id="target_abv_dilution" step="0.01" type="number" value="12.0"/>
+<input id="target_abv_dilution" step="0.01" type="number" value="40"/>
 <button onclick="calculateDilution()">Calculate Water Needed</button>
 <div class="result" id="dilution_output"></div>
 
 <h2>Blending Calculator</h2>
 <label for="batch1_abv">Batch 1 ABV (%):</label>
-<input id="batch1_abv" step="0.01" type="number" value="14.5"/>
+<input id="batch1_abv" step="0.01" type="number" value="40"/>
 <label for="batch1_volume">Batch 1 Volume:</label>
 <div class="volume-input-group">
-    <input id="batch1_volume" step="0.01" type="number" value="15"/>
+    <input id="batch1_volume" step="0.01" type="number" value="0.300"/>
     <select id="batch1_volume_unit" onchange="updateBatch1VolumeDisplay()">
         <option value="liter" selected>Liters</option>
         <option value="us_gallon">US gallons</option>
@@ -414,10 +414,10 @@
 </div>
 <div class="unit-note" id="batch1_volume_note">15 L = 3.96 US gal = 3.30 UK gal</div>
 <label for="batch2_abv">Batch 2 ABV (%):</label>
-<input id="batch2_abv" step="0.01" type="number" value="10.5"/>
+<input id="batch2_abv" step="0.01" type="number" value="9.55"/>
 <label for="batch2_volume">Batch 2 Volume:</label>
 <div class="volume-input-group">
-    <input id="batch2_volume" step="0.01" type="number" value="10"/>
+    <input id="batch2_volume" step="0.01" type="number" value=".700"/>
     <select id="batch2_volume_unit" onchange="updateBatch2VolumeDisplay()">
         <option value="liter" selected>Liters</option>
         <option value="us_gallon">US gallons</option>
