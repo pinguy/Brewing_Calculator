@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Refractometer ABV/Brix Calculator</title>
+<style>
+        :root {
+            --bg-color: #f9f9f9;
+            --card-bg: #fff;
+            --text-color: #2c3e50;
+            --border-color: #ccc;
+            --input-bg: #fff;
+            --button-bg: #3498db;
+            --button-text: #fff;
+            --secondary-text: #7f8c8d;
+            --gradient-bar: linear-gradient(to right, #2ecc71, #f39c12, #e74c3c);
+            --indicator-color: #2c3e50;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text-color: #e0e0e0;
+            --border-color: #404040;
+            --input-bg: #3d3d3d;
+            --button-bg: #4a90e2;
+            --button-text: #fff;
+            --secondary-text: #b0b0b0;
+            --gradient-bar: linear-gradient(to right, #27ae60, #e67e22, #c0392b);
+            --indicator-color: #e0e0e0;
+        }
+
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 750px; 
+            margin: auto; 
+            background: var(--bg-color); 
+            padding-bottom: 100px;
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            opacity: 0.8;
+        }
+
+        h2 { color: var(--text-color); }
+        
+        label, input, select { 
+            display: block; 
+            margin-top: 10px; 
+            color: var(--text-color);
+        }
+        
+        input[type="number"], select { 
+            width: 100%; 
+            padding: 8px; 
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+        }
+
+        button {
+            background: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: opacity 0.3s ease;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+        
+        .result { 
+            margin-top: 20px; 
+            padding: 10px; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+        }
+        
+        .sweetness { color: #8e44ad; font-weight: bold; }
+        
+        .sweetness-bar-container { 
+            width: 100%; 
+            height: 20px; 
+            background: var(--gradient-bar); 
+            border-radius: 10px; 
+            margin: 8px 0; 
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+        
+        .sweetness-indicator { 
+            position: absolute; 
+            top: -2px; 
+            width: 4px; 
+            height: 24px; 
+            background: var(--indicator-color); 
+            border-radius: 2px;
+            transition: left 0.3s ease;
+        }
+        
+        .sweetness-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--secondary-text);
+            margin-top: 2px;
+        }
+        
+        .status, .progress { font-weight: bold; padding: 5px 0; }
+        .complete { color: #27ae60; }
+        .nearly { color: #e67e22; }
+        .active { color: #e74c3c; }
+        
+        .volume-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .volume-input-group input {
+            flex: 2;
+        }
+        
+        .volume-input-group select {
+            flex: 1;
+        }
+        
+        .unit-note {
+            font-size: 12px;
+            color: var(--secondary-text);
+            margin-top: 5px;
+        }
+
+        canvas { 
+            margin-top: 20px; 
+            background: var(--card-bg);
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .wcf-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin: 20px 0;
+        }
+        
+        .wcf-label {
+            display: block;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+        
+        .wcf-description {
+            font-size: 13px;
+            color: var(--text-color);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        
+        .wcf-tip {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid rgba(52, 152, 219, 0.2);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--secondary-text);
+        }
+        
+        [data-theme="dark"] .wcf-tip {
+            background: rgba(74, 144, 226, 0.1);
+            border-color: rgba(74, 144, 226, 0.2);
+        }
+        
+        .tip-icon {
+            color: var(--button-bg);
+            margin-right: 6px;
+        }
+        
+        .highlight {
+            color: var(--button-bg);
+            font-weight: 500;
+        }
+        
+        [data-theme="dark"] .wcf-tip {
+            background: rgba(74, 144, 226, 0.1);
+            border-color: rgba(74, 144, 226, 0.2);
+        }
+        
+        .tip-icon {
+            color: var(--button-bg);
+            margin-right: 6px;
+        }
+        
+        .highlight {
+            color: var(--button-bg);
+            font-weight: 500;
+        }
+        
+
+    </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()">🌙 Dark Mode</button>
+
+<h2>Refractometer ABV/Brix Calculator</h2>
+<div class="wcf-container">
+<label for="og_brix">Original Brix (WRI):</label>
+<input id="og_brix" step="0.01" type="number" value="18.0"/>
+<label for="fg_brix">Current Brix (WRI):</label>
+<input id="fg_brix" step="0.01" type="number" value="5.0"/>
+        <label for="wcf" class="wcf-label">Wort Correction Factor</label>
+        <div class="wcf-description">
+            Fine-tune this factor using a <span class="highlight">completed bone dry batch</span> where you know the exact sugar additions or tested with a Hydrometer.
+            Adjust until the calculated ABV matches your expected result from sugar input. 
+            The default (1.038) works for most setups, but calibrating ensures accuracy for your specific equipment and process.
+        </div>
+        <div class="wcf-tip">
+            <span class="tip-icon">💡</span>
+            <strong>Pro Tip:</strong> Use the Simple Sugar to ABV Estimator below to verify your expected ABV from total sugar and volume.
+        </div>
+<input id="wcf" step="0.001" type="number" value="1.038"/>
+<label for="volume_input">Volume for Calorie Calculation:</label>
+<div class="volume-input-group">
+    <input id="volume_input" step="0.01" type="number" value="500"/>
+    <select id="volume_unit" onchange="updateVolumeDisplay()">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quart</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter">Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="volume_note">500 mL = 16.91 US fl oz = 17.60 UK fl oz</div>
+<button onclick="calculate()">Calculate</button>
+<div class="result" id="output"></div>
+<canvas id="abvChartRefractometer" width="600" height="300"></canvas>
+
+
+<h2>Traditional Hydrometer (SG) Calculator</h2>
+<label for="og_sg">Original Gravity (OG):</label>
+<input id="og_sg" step="0.001" type="number" value="1.065"/>
+<label for="fg_sg">Final Gravity (FG):</label>
+<input id="fg_sg" step="0.001" type="number" value="1.010"/>
+<label for="volume_input_sg">Volume for Calorie Calculation:</label>
+<div class="volume-input-group">
+    <input id="volume_input_sg" step="0.01" type="number" value="500"/>
+    <select id="volume_unit_sg" onchange="updateVolumeDisplaySG()">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quarts</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter">Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="volume_note_sg">500 mL = 16.91 US fl oz = 17.60 UK fl oz</div>
+<button onclick="calculateSG()">Calculate from SG</button>
+<div class="result" id="sg_output"></div>
+<canvas id="abvChartHydrometer" width="600" height="300"></canvas>
+
+<h2>Simple Sugar to ABV Estimator</h2>
+<label for="sugar_amount">Total Sugar Used:</label>
+<div class="volume-input-group">
+    <input id="sugar_amount" step="0.01" type="number" value="4018"/>
+    <select id="sugar_unit" onchange="updateSugarDisplay()">
+        <option value="grams" selected>Grams</option>
+        <option value="kg">Kilograms</option>
+        <option value="lbs">Pounds (lbs)</option>
+        <option value="oz">Ounces (oz)</option>
+        <option value="us_cups">US Cups</option>
+        <option value="uk_cups">UK Cups</option>
+    </select>
+</div>
+<div class="unit-note" id="sugar_note">3565 g = 3.57 kg = 7.86 lbs = 125.8 oz</div>
+<label for="volume_liters">Total Liquid Volume:</label>
+<div class="volume-input-group">
+    <input id="volume_liters" step="0.01" type="number" value="25"/>
+    <select id="batch_volume_unit" onchange="updateBatchVolumeDisplay()">
+        <option value="liter" selected>Liters</option>
+        <option value="us_gallon">US gallons</option>
+        <option value="uk_gallon">UK gallons</option>
+        <option value="us_quart">US quarts</option>
+        <option value="uk_quart">UK quarts</option>
+    </select>
+</div>
+<div class="unit-note" id="batch_volume_note">25 L = 6.60 US gal = 5.50 UK gal</div>
+<label for="conversion_factor">Sugar per 1% ABV (g/L):</label>
+<input id="conversion_factor" step="0.01" type="number" value="16.83"/>
+<button onclick="calculateSugarABV()">Estimate ABV</button>
+<div class="result" id="sugar_abv_output"></div>
+
+<h2>Target ABV to Sugar Requirement</h2>
+<label for="target_abv">Desired ABV (%):</label>
+<input id="target_abv" step="0.01" type="number" value="8.5"/>
+<label for="target_volume">Batch Volume:</label>
+<div class="volume-input-group">
+    <input id="target_volume" step="0.01" type="number" value="25"/>
+    <select id="target_volume_unit" onchange="updateTargetVolumeDisplay()">
+        <option value="liter" selected>Liters</option>
+        <option value="us_gallon">US gallons</option>
+        <option value="uk_gallon">UK gallons</option>
+        <option value="us_quart">US quarts</option>
+        <option value="uk_quart">UK quarts</option>
+    </select>
+</div>
+<div class="unit-note" id="target_volume_note">25 L = 6.60 US gal = 5.50 UK gal</div>
+<label for="target_factor">Sugar per 1% ABV (g/L):</label>
+<input id="target_factor" step="0.01" type="number" value="16.83"/>
+<button onclick="calculateRequiredSugar()">Calculate Required Sugar</button>
+<div class="result" id="required_sugar_output"></div>
+
+<h2>Priming Sugar Calculator</h2>
+<label for="prime_volume">Batch Volume:</label>
+<div class="volume-input-group">
+    <input id="prime_volume" step="0.01" type="number" value="25"/>
+    <select id="prime_volume_unit" onchange="updatePrimeVolumeDisplay()">
+        <option value="liter" selected>Liters</option>
+        <option value="us_gallon">US gallons</option>
+        <option value="uk_gallon">UK gallons</option>
+        <option value="us_quart">US quarts</option>
+        <option value="uk_quart">UK quarts</option>
+    </select>
+</div>
+<div class="unit-note" id="prime_volume_note">25 L = 6.60 US gal = 5.50 UK gal</div>
+<label for="co2_volumes">Desired CO2 Volumes:</label>
+<input id="co2_volumes" step="0.1" type="number" value="2.5"/>
+<label for="current_temp">Current Temperature (°C):</label>
+<input id="current_temp" step="0.1" type="number" value="20"/>
+<label for="sugar_type">Sugar Type:</label>
+<select id="sugar_type">
+    <option value="table">Table Sugar (Sucrose)</option>
+    <option value="corn">Corn Sugar (Dextrose)</option>
+    <option value="dme">Dry Malt Extract</option>
+    <option value="honey">Honey</option>
+</select>
+<button onclick="calculatePrimingSugar()">Calculate Priming Sugar</button>
+<div class="result" id="priming_output"></div>
+
+<h2>Dilution Calculator</h2>
+<label for="current_abv">Current ABV (%):</label>
+<input id="current_abv" step="0.01" type="number" value="15.5"/>
+<label for="current_volume">Current Volume:</label>
+<div class="volume-input-group">
+    <input id="current_volume" step="0.01" type="number" value="20"/>
+    <select id="current_volume_unit" onchange="updateCurrentVolumeDisplay()">
+        <option value="liter" selected>Liters</option>
+        <option value="us_gallon">US gallons</option>
+        <option value="uk_gallon">UK gallons</option>
+        <option value="us_quart">US quarts</option>
+        <option value="uk_quart">UK quarts</option>
+    </select>
+</div>
+<div class="unit-note" id="current_volume_note">20 L = 5.28 US gal = 4.40 UK gal</div>
+<label for="target_abv_dilution">Target ABV (%):</label>
+<input id="target_abv_dilution" step="0.01" type="number" value="12.0"/>
+<button onclick="calculateDilution()">Calculate Water Needed</button>
+<div class="result" id="dilution_output"></div>
+
+<h2>Blending Calculator</h2>
+<label for="batch1_abv">Batch 1 ABV (%):</label>
+<input id="batch1_abv" step="0.01" type="number" value="14.5"/>
+<label for="batch1_volume">Batch 1 Volume:</label>
+<div class="volume-input-group">
+    <input id="batch1_volume" step="0.01" type="number" value="15"/>
+    <select id="batch1_volume_unit" onchange="updateBatch1VolumeDisplay()">
+        <option value="liter" selected>Liters</option>
+        <option value="us_gallon">US gallons</option>
+        <option value="uk_gallon">UK gallons</option>
+        <option value="us_quart">US quarts</option>
+        <option value="uk_quart">UK quarts</option>
+    </select>
+</div>
+<div class="unit-note" id="batch1_volume_note">15 L = 3.96 US gal = 3.30 UK gal</div>
+<label for="batch2_abv">Batch 2 ABV (%):</label>
+<input id="batch2_abv" step="0.01" type="number" value="10.5"/>
+<label for="batch2_volume">Batch 2 Volume:</label>
+<div class="volume-input-group">
+    <input id="batch2_volume" step="0.01" type="number" value="10"/>
+    <select id="batch2_volume_unit" onchange="updateBatch2VolumeDisplay()">
+        <option value="liter" selected>Liters</option>
+        <option value="us_gallon">US gallons</option>
+        <option value="uk_gallon">UK gallons</option>
+        <option value="us_quart">US quarts</option>
+        <option value="uk_quart">UK quarts</option>
+    </select>
+</div>
+<div class="unit-note" id="batch2_volume_note">10 L = 2.64 US gal = 2.20 UK gal</div>
+<button onclick="calculateBlending()">Calculate Blend Result</button>
+<div class="result" id="blending_output"></div>
+
+<script>
+        // Theme management
+        function toggleTheme() {
+            const body = document.body;
+            const button = document.querySelector('.theme-toggle');
+            
+            if (body.hasAttribute('data-theme')) {
+                body.removeAttribute('data-theme');
+                button.textContent = '🌙 Dark Mode';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                button.textContent = '☀️ Light Mode';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Load saved theme
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const button = document.querySelector('.theme-toggle');
+            
+            if (savedTheme === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+                button.textContent = '☀️ Light Mode';
+            }
+        }
+
+        // Unit conversion factors to mL
+        const volumeConversions = {
+            ml: 1,
+            us_fl_oz: 29.5735,
+            uk_fl_oz: 28.4131,
+            us_cup: 236.588,
+            us_pint: 473.176,
+            uk_pint: 568.261,
+            us_quart: 946.353,
+            uk_quart: 1136.52,
+            us_gallon: 3785.41,
+            uk_gallon: 4546.09,
+            liter: 1000
+        };
+
+        // Sugar conversion factors to grams
+        const sugarConversions = {
+            grams: 1,
+            kg: 1000,
+            lbs: 453.592,
+            oz: 28.3495,
+            us_cups: 200, // Approximate for granulated sugar
+            uk_cups: 227  // UK cup is slightly larger
+        };
+
+        function convertToMl(value, unit) {
+            return value * volumeConversions[unit];
+        }
+
+        function convertFromMl(valueInMl, targetUnit) {
+            return valueInMl / volumeConversions[targetUnit];
+        }
+
+        function convertToGrams(value, unit) {
+            return value * sugarConversions[unit];
+        }
+
+        function convertFromGrams(valueInGrams, targetUnit) {
+            return valueInGrams / sugarConversions[targetUnit];
+        }
+
+        function updateSugarDisplay() {
+            const value = parseFloat(document.getElementById("sugar_amount").value) || 0;
+            const unit = document.getElementById("sugar_unit").value;
+            const valueInGrams = convertToGrams(value, unit);
+            
+            const kg = convertFromGrams(valueInGrams, 'kg');
+            const lbs = convertFromGrams(valueInGrams, 'lbs');
+            const oz = convertFromGrams(valueInGrams, 'oz');
+            
+            document.getElementById("sugar_note").textContent = 
+                `${valueInGrams.toFixed(0)} g = ${kg.toFixed(2)} kg = ${lbs.toFixed(2)} lbs = ${oz.toFixed(1)} oz`;
+        }
+
+        function updateVolumeDisplay() {
+            const value = parseFloat(document.getElementById("volume_input").value) || 0;
+            const unit = document.getElementById("volume_unit").value;
+            const valueInMl = convertToMl(value, unit);
+            
+            const usFlOz = convertFromMl(valueInMl, 'us_fl_oz');
+            const ukFlOz = convertFromMl(valueInMl, 'uk_fl_oz');
+            
+            document.getElementById("volume_note").textContent = 
+                `${valueInMl.toFixed(0)} mL = ${usFlOz.toFixed(2)} US fl oz = ${ukFlOz.toFixed(2)} UK fl oz`;
+        }
+
+        function updateVolumeDisplaySG() {
+            const value = parseFloat(document.getElementById("volume_input_sg").value) || 0;
+            const unit = document.getElementById("volume_unit_sg").value;
+            const valueInMl = convertToMl(value, unit);
+            
+            const usFlOz = convertFromMl(valueInMl, 'us_fl_oz');
+            const ukFlOz = convertFromMl(valueInMl, 'uk_fl_oz');
+            
+            document.getElementById("volume_note_sg").textContent = 
+                `${valueInMl.toFixed(0)} mL = ${usFlOz.toFixed(2)} US fl oz = ${ukFlOz.toFixed(2)} UK fl oz`;
+        }
+
+        function updateBatchVolumeDisplay() {
+            const value = parseFloat(document.getElementById("volume_liters").value) || 0;
+            const unit = document.getElementById("batch_volume_unit").value;
+            const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
+            
+            const usGal = convertFromMl(valueInL * 1000, 'us_gallon');
+            const ukGal = convertFromMl(valueInL * 1000, 'uk_gallon');
+            
+            document.getElementById("batch_volume_note").textContent = 
+                `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
+        }
+
+        function updateTargetVolumeDisplay() {
+            const value = parseFloat(document.getElementById("target_volume").value) || 0;
+            const unit = document.getElementById("target_volume_unit").value;
+            const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
+            
+            const usGal = convertFromMl(valueInL * 1000, 'us_gallon');
+            const ukGal = convertFromMl(valueInL * 1000, 'uk_gallon');
+            
+            document.getElementById("target_volume_note").textContent = 
+                `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
+        }
+
+        function updatePrimeVolumeDisplay() {
+            const value = parseFloat(document.getElementById("prime_volume").value) || 0;
+            const unit = document.getElementById("prime_volume_unit").value;
+            const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
+            
+            const usGal = convertFromMl(valueInL * 1000, 'us_gallon');
+            const ukGal = convertFromMl(valueInL * 1000, 'uk_gallon');
+            
+            document.getElementById("prime_volume_note").textContent = 
+                `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
+        }
+
+        function updateCurrentVolumeDisplay() {
+            const value = parseFloat(document.getElementById("current_volume").value) || 0;
+            const unit = document.getElementById("current_volume_unit").value;
+            const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
+            
+            const usGal = convertFromMl(valueInL * 1000, 'us_gallon');
+            const ukGal = convertFromMl(valueInL * 1000, 'uk_gallon');
+            
+            document.getElementById("current_volume_note").textContent = 
+                `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
+        }
+
+        function updateBatch1VolumeDisplay() {
+            const value = parseFloat(document.getElementById("batch1_volume").value) || 0;
+            const unit = document.getElementById("batch1_volume_unit").value;
+            const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
+            
+            const usGal = convertFromMl(valueInL * 1000, 'us_gallon');
+            const ukGal = convertFromMl(valueInL * 1000, 'uk_gallon');
+            
+            document.getElementById("batch1_volume_note").textContent = 
+                `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
+        }
+
+        function updateBatch2VolumeDisplay() {
+            const value = parseFloat(document.getElementById("batch2_volume").value) || 0;
+            const unit = document.getElementById("batch2_volume_unit").value;
+            const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
+            
+            const usGal = convertFromMl(valueInL * 1000, 'us_gallon');
+            const ukGal = convertFromMl(valueInL * 1000, 'uk_gallon');
+            
+            document.getElementById("batch2_volume_note").textContent = 
+                `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
+        }
+
+        let abvChartRefractometer;
+        let abvChartHydrometer;
+
+        function updateChart(canvasId, sgVals, abvVal) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            let chart;
+
+            if (canvasId === 'abvChartRefractometer') {
+                if (abvChartRefractometer) abvChartRefractometer.destroy();
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Original', 'Final'],
+                        datasets: [{
+                            label: 'SG Progress',
+                            data: sgVals,
+                            borderColor: 'teal',
+                            fill: false,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            title: { display: true, text: `Estimated ABV: ${abvVal}%` }
+                        },
+                        scales: {
+                            y: { beginAtZero: false }
+                        }
+                    }
+                });
+                abvChartRefractometer = chart;
+            } else if (canvasId === 'abvChartHydrometer') {
+                if (abvChartHydrometer) abvChartHydrometer.destroy();
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Original', 'Final'],
+                        datasets: [{
+                            label: 'SG Progress',
+                            data: sgVals,
+                            borderColor: 'teal',
+                            fill: false,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            title: { display: true, text: `Estimated ABV: ${abvVal}%` }
+                        },
+                        scales: {
+                            y: { beginAtZero: false }
+                        }
+                    }
+                });
+                abvChartHydrometer = chart;
+            }
+        }
+
+        // Function to convert Brix to Refractive Index (RI) - KEPT FOR REFERENCE, NOT USED IN FG CALC
+        function brixToRI(brix) {
+            return 1.33302 + 0.001427193 * brix + 0.000005791157 * Math.pow(brix, 2);
+        }
+
+        function calculate() {
+            const ogBrix = parseFloat(document.getElementById("og_brix").value);
+            const fgBrix = parseFloat(document.getElementById("fg_brix").value);
+            const wcf = parseFloat(document.getElementById("wcf").value);
+            const volumeInput = parseFloat(document.getElementById("volume_input").value);
+            const volumeUnit = document.getElementById("volume_unit").value;
+            const volumeMl = convertToMl(volumeInput, volumeUnit);
+
+            if (isNaN(ogBrix) || isNaN(fgBrix) || isNaN(wcf) || isNaN(volumeMl)) {
+                 document.getElementById("output").innerHTML = 
+                    '<span class="active">Please enter valid numeric values for Brix, WCF, and Volume.</span>';
+                if (typeof abvChartRefractometer !== 'undefined' && abvChartRefractometer) {
+                    abvChartRefractometer.destroy();
+                    abvChartRefractometer = null; 
+                }
+                return;
+            }
+
+
+            // OG calculation from corrected OBrix
+            const correctedObrix = ogBrix / wcf;
+            const og_sg = 1 + (correctedObrix / (258.6 - ((correctedObrix / 258.2) * 227.1)));
+
+            // Reverted FG calculation using Brix values directly (from brix_logic_patch.html)
+            // This formula is known to provide more accurate "dry" results for refractometer readings.
+            const FG = 1.0000
+                        - 0.00085683 * ogBrix
+                        + 0.0034941 * fgBrix
+                        + 0.0000051118 * Math.pow(ogBrix, 2)
+                        - 0.000013228 * Math.pow(fgBrix, 2)
+                        - 0.00000083764 * Math.pow(ogBrix, 3)
+                        + 0.00000018017 * Math.pow(fgBrix, 3);
+
+            const abv_std = (og_sg - FG) * 131.25;
+            const abv_alt = ((76.08 * (og_sg - FG)) / (1.775 - og_sg)) * (FG / 0.794);
+
+            // Calculate calories
+            const calories = calculateCalories(og_sg, FG, volumeMl);
+
+            // Calculate residual sugar in g/L and for the specified volume
+            const residualSugarGL = calculateResidualSugar(FG);
+            const residualSugarInVolume = (residualSugarGL * volumeMl) / 1000; // Convert to grams in the specified volume
+            
+            // Calculate sweetness percentage for visual display (0-100%)
+            const sweetnessPercentage = calculateSweetnessPercentage(residualSugarGL);
+            
+            // Calculate sweetness classification
+            const sweetness = getSweetnessClassification(FG, Math.max(abv_std, abv_alt));
+
+            const final_target_FG = 1.0001;
+            let fermentation_progress = 0;
+            if ((og_sg - final_target_FG) !== 0) {
+                fermentation_progress = ((og_sg - FG) / (og_sg - final_target_FG)) * 100;
+            } else if (og_sg <= FG) {
+                fermentation_progress = (FG >= final_target_FG && og_sg >= final_target_FG) ? 100 : 0;
+            }
+
+
+            let statusText = "";
+            let statusClass = "status ";
+            let progressClass = "progress ";
+
+            if (fermentation_progress >= 99 && FG <= (final_target_FG + 0.001)) {
+                statusText = "Fermentation Complete (dry).";
+                statusClass += "complete";
+                progressClass += "complete";
+            } else if (fermentation_progress >= 93) {
+                 statusText = "Fermentation nearly complete or complete (check FG).";
+                statusClass += "complete";
+                progressClass += "complete";
+            } else if (fermentation_progress >= 83) {
+                statusText = "Fermentation well underway.";
+                statusClass += "nearly";
+                progressClass += "nearly";
+            } else {
+                statusText = "Fermentation still active or in early stages.";
+                statusClass += "active";
+                progressClass += "active";
+            }
+
+            // Calculate Attenuation
+            let attenuation = 0;
+            if ((og_sg - 1) !== 0) {
+                attenuation = ((og_sg - FG) / (og_sg - 1)) * 100;
+            }
+
+
+            // Get unit display text
+            const unitDisplayText = getUnitDisplayText(volumeUnit);
+            const volumeDisplayValue = volumeUnit === 'ml' ? volumeMl.toFixed(0) : volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
+
+            document.getElementById("output").innerHTML = `
+                <strong>Corrected OG (SG):</strong> ${og_sg.toFixed(4)}<br>
+                <strong>Corrected FG (SG):</strong> ${FG.toFixed(4)}<br>
+                <strong>ABV:</strong> ${abv_std.toFixed(2)}%<br>
+                <strong>Apparent Attenuation:</strong> ${attenuation.toFixed(2)}%<br>
+                <strong>Residual Sugar:</strong> ${residualSugarGL.toFixed(1)} g/L (${residualSugarInVolume.toFixed(1)}g in ${volumeDisplayValue}${unitDisplayText})<br>
+                <strong>Sweetness Level:</strong> ${sweetnessPercentage.toFixed(0)}%<br>
+                <div class="sweetness-bar-container">
+                    <div class="sweetness-indicator" style="left: ${Math.min(100, Math.max(0, sweetnessPercentage))}%;"></div>
+                </div>
+                <div class="sweetness-labels">
+                    <span>Bone Dry (0%)</span>
+                    <span>Semi-Sweet (50%)</span>
+                    <span>Dessert Sweet (100%)</span>
+                </div>
+                <strong>Calories per ${volumeDisplayValue}${unitDisplayText}:</strong> ${calories.toFixed(0)} Kcal<br>
+                <strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})<br>
+                <div class="${progressClass}">Fermentation Progress: ${fermentation_progress.toFixed(1)}%</div>
+                <div class="${statusClass}">${statusText}</div>
+            `;
+
+            updateChart('abvChartRefractometer', [og_sg, FG], abv_std.toFixed(2));
+        }
+
+        function calculateSG() {
+            const og_sg = parseFloat(document.getElementById("og_sg").value);
+            const fg_sg = parseFloat(document.getElementById("fg_sg").value);
+            const volumeInput = parseFloat(document.getElementById("volume_input_sg").value); // Get volume input
+            const volumeUnit = document.getElementById("volume_unit_sg").value;
+
+            // Add this input validation check
+            if (isNaN(og_sg) || isNaN(fg_sg) || isNaN(volumeInput)) {
+                document.getElementById("sg_output").innerHTML = 
+                    '<span class="active">Please enter valid numeric values for OG, FG, and Volume.</span>';
+                
+                // Optionally, clear or reset the chart if it exists
+                if (typeof abvChartHydrometer !== 'undefined' && abvChartHydrometer) {
+                    abvChartHydrometer.destroy();
+                    abvChartHydrometer = null; // Ensure it's re-initialized next time
+                }
+                return; // Stop further execution
+            }
+            
+            const volumeMl = convertToMl(volumeInput, volumeUnit);
+
+            // Calculate ABV using standard formula
+            const abv_std = (og_sg - fg_sg) * 131.25;
+            const abv_alt = ((76.08 * (og_sg - fg_sg)) / (1.775 - og_sg)) * (fg_sg / 0.794);
+
+            // Calculate calories
+            const calories = calculateCalories(og_sg, fg_sg, volumeMl);
+
+            // Calculate residual sugar in g/L and for the specified volume
+            const residualSugarGL = calculateResidualSugar(fg_sg);
+            const residualSugarInVolume = (residualSugarGL * volumeMl) / 1000;
+            
+            // Calculate sweetness percentage for visual display (0-100%)
+            const sweetnessPercentage = calculateSweetnessPercentage(residualSugarGL);
+            
+            // Calculate sweetness classification
+            const sweetness = getSweetnessClassification(fg_sg, Math.max(abv_std, abv_alt));
+
+            const final_target_FG = 1.0001; 
+            let fermentation_progress = 0;
+            if ((og_sg - final_target_FG) !== 0) { 
+                 fermentation_progress = ((og_sg - fg_sg) / (og_sg - final_target_FG)) * 100;
+            } else if (og_sg <= fg_sg) { 
+                 fermentation_progress = (fg_sg >= final_target_FG && og_sg >= final_target_FG) ? 100 : 0;
+            }
+
+
+            let statusText = "";
+            let statusClass = "status ";
+            let progressClass = "progress ";
+
+            if (fermentation_progress >= 99 && fg_sg <= (final_target_FG + 0.001)) { 
+                statusText = "Fermentation Complete (dry).";
+                statusClass += "complete";
+                progressClass += "complete";
+            } else if (fermentation_progress >= 93) { 
+                statusText = "Fermentation nearly complete or complete (check FG)."; 
+                statusClass += "complete";
+                progressClass += "complete";
+            } else if (fermentation_progress >= 83) {
+                statusText = "Fermentation well underway."; 
+                statusClass += "nearly";
+                progressClass += "nearly";
+            } else {
+                statusText = "Fermentation still active or in early stages."; 
+                statusClass += "active";
+                progressClass += "active";
+            }
+
+            // Calculate Attenuation
+            let attenuation = 0;
+            if ((og_sg - 1) !== 0) { 
+                attenuation = ((og_sg - fg_sg) / (og_sg - 1)) * 100;
+            }
+
+
+            // Get unit display text
+            const unitDisplayText = getUnitDisplayText(volumeUnit);
+            const volumeDisplayValue = volumeUnit === 'ml' ? volumeMl.toFixed(0) : volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
+
+            document.getElementById("sg_output").innerHTML = `
+                <strong>Original Gravity (OG):</strong> ${og_sg.toFixed(3)}<br>
+                <strong>Final Gravity (FG):</strong> ${fg_sg.toFixed(3)}<br>
+                <strong>ABV (Standard Formula):</strong> ${abv_std.toFixed(2)}%<br>
+                <strong>ABV (Alternate Formula):</strong> ${abv_alt.toFixed(2)}%<br>
+                <strong>Apparent Attenuation:</strong> ${attenuation.toFixed(2)}%<br>
+                <strong>Residual Sugar:</strong> ${residualSugarGL.toFixed(1)} g/L (${residualSugarInVolume.toFixed(1)}g in ${volumeDisplayValue}${unitDisplayText})<br>
+                <strong>Sweetness Level:</strong> ${sweetnessPercentage.toFixed(0)}%<br>
+                <div class="sweetness-bar-container">
+                    <div class="sweetness-indicator" style="left: ${Math.min(100, Math.max(0, sweetnessPercentage))}%;"></div>
+                </div>
+                <div class="sweetness-labels">
+                    <span>Bone Dry (0%)</span>
+                    <span>Semi-Sweet (50%)</span>
+                    <span>Dessert Sweet (100%)</span>
+                </div>
+                <strong>Calories per ${volumeDisplayValue}${unitDisplayText}:</strong> ${calories.toFixed(0)} Kcal<br>
+                <strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})<br>
+                <div class="${progressClass}">Fermentation Progress: ${fermentation_progress.toFixed(1)}%</div>
+                <div class="${statusClass}">${statusText}</div>
+            `;
+            updateChart('abvChartHydrometer', [og_sg, fg_sg], abv_std.toFixed(2));
+        }
+
+        function getUnitDisplayText(unit) {
+            const unitNames = {
+                ml: 'mL',
+                us_fl_oz: ' US fl oz',
+                uk_fl_oz: ' UK fl oz',
+                us_cup: ' US cups',
+                us_pint: ' US pints',
+                uk_pint: ' UK pints',
+                us_quart: ' US quarts',
+                uk_quart: ' UK quarts',
+                us_gallon: ' US gallons',
+                uk_gallon: ' UK gallons',
+                liter: 'L'
+            };
+            return unitNames[unit] || '';
+        }
+
+        function calculateSweetnessPercentage(residualSugarGL) {
+            // Convert residual sugar g/L to a 0-100% sweetness scale
+            // 0 g/L = 0% (bone dry)
+            // 50+ g/L = 100% (dessert sweet)
+            // Use a logarithmic scale to better represent perceived sweetness
+            const maxSugar = 50; // g/L for 100% sweetness
+            let percentage = Math.min(100, (residualSugarGL / maxSugar) * 100);
+            
+            // Apply slight curve to make lower values more sensitive
+            percentage = Math.pow(percentage / 100, 0.8) * 100;
+            
+            return Math.max(0, percentage);
+        }
+
+        function calculateResidualSugar(fg) {
+            // Convert final gravity to residual sugar in g/L
+            // Formula: (FG - 1.000) * 1000 * 2.5 
+            // This converts specific gravity points to grams per liter
+            // The 2.5 factor accounts for the density relationship of dissolved sugars
+            const residualSugarGL = Math.max(0, (fg - 1.000) * 1000 * 2.5);
+            return residualSugarGL;
+        }
+
+        function getSweetnessClassification(fg, abv) {
+            // Calculate approximate residual sugar percentage using the same formula as residual sugar g/L
+            const residualSugarGL = Math.max(0, (fg - 1.000) * 1000 * 2.5);
+            const residualSugar = residualSugarGL / 10; // Convert g/L to approximate percentage
+            
+            let simple, detailed;
+            
+            // Simple classification (2012 Wisconsin State Fair)
+            if (fg <= 1.002) {
+                simple = "Dry";
+            } else if (fg <= 1.010) {
+                simple = "Semi-Sweet";
+            } else {
+                simple = "Sweet";
+            }
+            
+            // Detailed classification
+            if (fg < 1.000 || residualSugar < 0.5) { // fg < 1.000 is essentially "bone dry" or an error
+                detailed = "Dry Wine - virtually no residual sugar";
+            } else if (residualSugar <= 1.0 && abv < 14) { // up to 10 g/L RS
+                detailed = "Off-Dry Wine - not completely dry but suitable for meals";
+            } else if (residualSugar <= 4.0 && abv < 14) { // 10-40 g/L RS
+                detailed = "Social Wine - semi-dry/semi-sweet, enjoyed with snacks";
+            } else if (residualSugar > 4.0) { // >40 g/L RS
+                detailed = "Dessert Wine - very sweet, served with desserts";
+            } else { // This case might be hard to reach if abv is always a number.
+                     // It's a fallback if other conditions for detailed are not met.
+                detailed = "Specialty Wine - check characteristics";
+            }
+            
+            return { simple, detailed };
+        }
+
+        function calculateCalories(og, fg, volumeMl) {
+            if (!og || !fg || og <= 0 || fg <= 0 || isNaN(og) || isNaN(fg)) {
+                return 0;
+            }
+            if (!volumeMl || volumeMl <= 0 || isNaN(volumeMl)) {
+                return 0;
+            }
+            
+            // Convert SG to Plato
+            const ogPlato = (og - 1) * 1000 / 4;
+            const fgPlato = (fg - 1) * 1000 / 4;
+            
+            // Calculate Real Extract using proper brewing formula
+            const realExtract = (0.1808 * ogPlato) + (0.8192 * fgPlato);
+            
+            // Calculate ABW (Alcohol by Weight)
+            const abw = (ogPlato - realExtract) / (2.0665 - (0.010665 * ogPlato));
+            
+            // Calculate calories per 12oz using adjusted formula to match reference
+            // Adjusted coefficient from 3.55 to 3.42 to match target of 227.6 cal for reference values
+            const caloriesPer12oz = ((6.9 * abw) + 4.0 * (realExtract - 0.1)) * fg * 3.42;
+            
+            // Scale to requested volume (12oz = 354.882mL)
+            const calories = (caloriesPer12oz * volumeMl) / 354.882;
+            
+            return calories > 0 ? calories : 0; // Ensure non-negative calories
+        }
+
+        function calculateSugarABV() {
+            const sugarInput = parseFloat(document.getElementById("sugar_amount").value);
+            const sugarUnit = document.getElementById("sugar_unit").value;
+            const sugar = convertToGrams(sugarInput, sugarUnit); // Convert input sugar to grams
+            
+            const volumeInput = parseFloat(document.getElementById("volume_liters").value);
+            const volumeUnit = document.getElementById("batch_volume_unit").value;
+            const factor = parseFloat(document.getElementById("conversion_factor").value);
+            
+            // Convert volume to liters
+            const volume = volumeUnit === 'liter' ? volumeInput : convertToMl(volumeInput, volumeUnit) / 1000;
+
+            if (!isNaN(sugar) && !isNaN(volume) && !isNaN(factor) && sugar > 0 && volume > 0 && factor > 0) {
+                const abv = (sugar / (volume * factor));
+
+                // Calculate estimated OG (SG) from sugar content using corrected formulas
+                const sugar_concentration_gl = sugar / volume;
+                // Corrected Plato conversion: 1° Plato = 10 g/L of sugar (approximately)
+                const estimated_plato = sugar_concentration_gl / 9.4; 
+                // Corrected Plato to SG conversion
+                const estimated_og_sg = 1 + (estimated_plato / (258.6 - (estimated_plato / 258.2 * 227.1)));
+
+                const unitText = volumeUnit === 'liter' ? 'L' : getUnitDisplayText(volumeUnit).trim();
+                const displayVolume = volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
+                
+                document.getElementById("sugar_abv_output").innerHTML =
+                    // `<strong>Estimated OG (SG):</strong> ${estimated_og_sg.toFixed(3)}<br>` +
+                    `<strong>Estimated ABV:</strong> ${abv.toFixed(2)}% (based on ${factor}g sugar per 1% ABV per liter)<br>` +
+                    `<strong>Batch size:</strong> ${displayVolume} ${unitText} (${volume.toFixed(1)}L)`;
+            } else {
+                document.getElementById("sugar_abv_output").innerHTML =
+                    `<span class="active">Please enter valid non-zero sugar, volume, and conversion factor values.</span>`;
+            }
+        }
+
+        function calculateRequiredSugar() {
+            const abv = parseFloat(document.getElementById("target_abv").value);
+            const volumeInput = parseFloat(document.getElementById("target_volume").value);
+            const volumeUnit = document.getElementById("target_volume_unit").value;
+            const factor = parseFloat(document.getElementById("target_factor").value);
+            
+            // Convert volume to liters
+            const volume = volumeUnit === 'liter' ? volumeInput : convertToMl(volumeInput, volumeUnit) / 1000;
+
+            if (!isNaN(abv) && !isNaN(volume) && !isNaN(factor) && abv > 0 && volume > 0 && factor > 0) {
+                const sugar_required = abv * volume * factor;
+
+                // Calculate estimated OG (SG) from required sugar using corrected formulas
+                const sugar_concentration_gl = sugar_required / volume;
+                // Corrected Plato conversion: 1° Plato = 10 g/L of sugar (approximately)
+                   const estimated_plato = sugar_concentration_gl / 9.4; 
+                // Corrected Plato to SG conversion
+                const estimated_og_sg = 1 + (estimated_plato / (258.6 - (estimated_plato / 258.2 * 227.1)));
+
+                const unitText = volumeUnit === 'liter' ? 'L' : getUnitDisplayText(volumeUnit).trim();
+                const displayVolume = volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
+                
+                document.getElementById("required_sugar_output").innerHTML =
+                  //`<strong>Estimated OG (SG):</strong> ${estimated_og_sg.toFixed(3)}<br>` +
+                    `<strong>Required Sugar:</strong> ${sugar_required.toFixed(2)} grams<br>` +
+                    `(to reach ${abv.toFixed(2)}% ABV in ${displayVolume} ${unitText} [${volume.toFixed(1)}L] using ${factor}g/L per 1% ABV)`;
+            } else {
+                document.getElementById("required_sugar_output").innerHTML =
+                    `<span class="active">Please enter valid non-zero ABV, volume, and conversion factor values.</span>`;
+            }
+        }
+
+        function calculatePrimingSugar() {
+            const volumeInput = parseFloat(document.getElementById("prime_volume").value);
+            const volumeUnit = document.getElementById("prime_volume_unit").value;
+            const co2Volumes = parseFloat(document.getElementById("co2_volumes").value);
+            const currentTemp = parseFloat(document.getElementById("current_temp").value);
+            const sugarType = document.getElementById("sugar_type").value;
+
+            // Convert volume to liters
+            const volumeLiters = volumeUnit === 'liter' ? volumeInput : convertToMl(volumeInput, volumeUnit) / 1000;
+
+            // CO2 saturation at given temperature (volumes of CO2 per volume of liquid)
+            // Approx values, simplified for calculator
+            let co2Saturation;
+            if (currentTemp <= 0) co2Saturation = 1.7;
+            else if (currentTemp <= 4) co2Saturation = 1.5;
+            else if (currentTemp <= 8) co2Saturation = 1.3;
+            else if (currentTemp <= 12) co2Saturation = 1.1;
+            else if (currentTemp <= 16) co2Saturation = 0.9;
+            else if (currentTemp <= 20) co2Saturation = 0.8;
+            else co2Saturation = 0.7; // Higher temps
+
+            // Sugar factors (grams per liter to achieve 1 volume of CO2)
+            let sugarFactor;
+            switch (sugarType) {
+                case 'table':
+                    sugarFactor = 4.0; // grams of sucrose per liter per volume CO2
+                    break;
+                case 'corn':
+                    sugarFactor = 4.3; // grams of dextrose per liter per volume CO2
+                    break;
+                case 'dme':
+                    sugarFactor = 6.0; // grams of DME per liter per volume CO2
+                    break;
+                case 'honey':
+                    sugarFactor = 5.0; // grams of honey per liter per volume CO2 (approx, depends on water content)
+                    break;
+                default:
+                    sugarFactor = 4.0;
+            }
+
+            if (!isNaN(volumeLiters) && !isNaN(co2Volumes) && !isNaN(currentTemp) && volumeLiters > 0 && co2Volumes > 0) {
+                // Calculate required CO2 from priming
+                const requiredCo2FromPriming = co2Volumes - co2Saturation;
+
+                if (requiredCo2FromPriming <= 0) {
+                    document.getElementById("priming_output").innerHTML =
+                        `<span class="active">No priming sugar needed, brew is likely already carbonated enough at this temperature, or desired CO2 is too low.</span>`;
+                    return;
+                }
+
+                const primingSugarGrams = requiredCo2FromPriming * volumeLiters * sugarFactor;
+                const unitText = volumeUnit === 'liter' ? 'L' : getUnitDisplayText(volumeUnit).trim();
+                const displayVolume = volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
+
+                document.getElementById("priming_output").innerHTML =
+                    `<strong>Required Priming Sugar:</strong> ${primingSugarGrams.toFixed(2)} grams (${sugarType})<br>
+                    (for ${co2Volumes.toFixed(1)} volumes CO2 in ${displayVolume} ${unitText} at ${currentTemp}°C)`;
+            } else {
+                document.getElementById("priming_output").innerHTML =
+                    `<span class="active">Please enter valid non-zero values for volume, desired CO2, and current temperature.</span>`;
+            }
+        }
+
+        function calculateDilution() {
+            const currentAbv = parseFloat(document.getElementById("current_abv").value);
+            const currentVolumeInput = parseFloat(document.getElementById("current_volume").value);
+            const currentVolumeUnit = document.getElementById("current_volume_unit").value;
+            const targetAbv = parseFloat(document.getElementById("target_abv_dilution").value);
+
+            // Convert current volume to liters
+            const currentVolumeL = currentVolumeUnit === 'liter' ? currentVolumeInput : convertToMl(currentVolumeInput, currentVolumeUnit) / 1000;
+
+            if (!isNaN(currentAbv) && !isNaN(currentVolumeL) && !isNaN(targetAbv) && 
+                currentAbv > 0 && currentVolumeL > 0 && targetAbv > 0) {
+                
+                if (targetAbv >= currentAbv) {
+                    document.getElementById("dilution_output").innerHTML =
+                        `<span class="active">Target ABV must be lower than Current ABV for dilution.</span>`;
+                    return;
+                }
+
+                const waterNeededL = (currentAbv * currentVolumeL / targetAbv) - currentVolumeL;
+                
+                const unitText = currentVolumeUnit === 'liter' ? 'L' : getUnitDisplayText(currentVolumeUnit).trim();
+                const displayCurrentVolume = currentVolumeInput.toFixed(currentVolumeInput % 1 === 0 ? 0 : 2);
+
+                document.getElementById("dilution_output").innerHTML =
+                    `<strong>Water Needed:</strong> ${waterNeededL.toFixed(2)} Liters<br>
+                    (to dilute ${displayCurrentVolume} ${unitText} at ${currentAbv.toFixed(1)}% ABV to ${targetAbv.toFixed(1)}% ABV)`;
+            } else {
+                document.getElementById("dilution_output").innerHTML =
+                    `<span class="active">Please enter valid non-zero values for current ABV, current volume, and target ABV.</span>`;
+            }
+        }
+
+        function calculateBlending() {
+            const abv1 = parseFloat(document.getElementById("batch1_abv").value);
+            const volume1Input = parseFloat(document.getElementById("batch1_volume").value);
+            const volume1Unit = document.getElementById("batch1_volume_unit").value;
+            const abv2 = parseFloat(document.getElementById("batch2_abv").value);
+            const volume2Input = parseFloat(document.getElementById("batch2_volume").value);
+            const volume2Unit = document.getElementById("batch2_volume_unit").value;
+
+            // Convert volumes to liters
+            const volume1L = volume1Unit === 'liter' ? volume1Input : convertToMl(volume1Input, volume1Unit) / 1000;
+            const volume2L = volume2Unit === 'liter' ? volume2Input : convertToMl(volume2Input, volume2Unit) / 1000;
+
+            if (!isNaN(abv1) && !isNaN(volume1L) && !isNaN(abv2) && !isNaN(volume2L) &&
+                volume1L > 0 && volume2L > 0 && abv1 >=0 && abv2 >=0) { // allow 0 ABV for non-alcoholic component
+                
+                const totalVolume = volume1L + volume2L;
+                if (totalVolume <= 0) { // Should not happen if volume1L & volume2L > 0, but good practice
+                     document.getElementById("blending_output").innerHTML =
+                        `<span class="active">Total volume is zero or negative. Please check inputs.</span>`;
+                    return;
+                }
+                const blendedAbv = ((abv1 * volume1L) + (abv2 * volume2L)) / totalVolume;
+
+                const unitText1 = volume1Unit === 'liter' ? 'L' : getUnitDisplayText(volume1Unit).trim();
+                const displayVolume1 = volume1Input.toFixed(volume1Input % 1 === 0 ? 0 : 2);
+                const unitText2 = volume2Unit === 'liter' ? 'L' : getUnitDisplayText(volume2Unit).trim();
+                const displayVolume2 = volume2Input.toFixed(volume2Input % 1 === 0 ? 0 : 2);
+                
+                document.getElementById("blending_output").innerHTML =
+                    `<strong>Blended ABV:</strong> ${blendedAbv.toFixed(2)}%<br>
+                    <strong>Total Volume:</strong> ${totalVolume.toFixed(2)} Liters<br>
+                    (${displayVolume1} ${unitText1} at ${abv1.toFixed(1)}% ABV + ${displayVolume2} ${unitText2} at ${abv2.toFixed(1)}% ABV)`;
+            } else {
+                document.getElementById("blending_output").innerHTML =
+                    `<span class="active">Please enter valid non-zero volumes and non-negative ABVs for both batches.</span>`;
+            }
+        }
+
+        // Initialize displays on page load
+        window.onload = function() {
+            loadTheme(); // Load theme preference
+            updateVolumeDisplay();
+            updateVolumeDisplaySG();
+            updateSugarDisplay(); // Added this to initialize sugar display
+            updateBatchVolumeDisplay();
+            updateTargetVolumeDisplay();
+            updatePrimeVolumeDisplay(); 
+            updateCurrentVolumeDisplay(); 
+            updateBatch1VolumeDisplay(); 
+            updateBatch2VolumeDisplay(); 
+        };
+</script>
+</body>
+</html>
