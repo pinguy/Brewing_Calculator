@@ -402,8 +402,8 @@
 <input id="current_abv" step="0.01" type="number" value="60" oninput="calculateDilution()"/>
 <label for="current_volume">Current Volume:</label>
 <div class="volume-input-group">
-    <input id="current_volume" step="0.01" type="number" value="1" oninput="updateCurrentVolumeDisplay(); calculateDilution()"/>
-    <select id="current_volume_unit" onchange="updateCurrentVolumeDisplay(); calculateDilution()">
+    <input id="current_volume" step="0.01" type="number" value="1" oninput="updateDilutionCurrentVolumeDisplay(); calculateDilution()"/>
+    <select id="current_volume_unit" onchange="updateDilutionCurrentVolumeDisplay(); calculateDilution()">
         <option value="ml">mL</option>
         <option value="us_fl_oz">US fl oz</option>
         <option value="uk_fl_oz">UK fl oz</option>
@@ -420,6 +420,26 @@
 <div class="unit-note" id="current_volume_note">20 L = 5.28 US gal = 4.40 UK gal</div>
 <label for="target_abv_dilution">Target ABV (%):</label>
 <input id="target_abv_dilution" step="0.01" type="number" value="40" oninput="calculateDilution()"/>
+
+<label for="dilution_calorie_volume_input">Volume for Kcal Calculation:</label>
+<div class="volume-input-group">
+    <input id="dilution_calorie_volume_input" step="0.01" type="number" value="100" oninput="updateDilutionCalorieVolumeDisplay(); calculateDilution();"/>
+    <select id="dilution_calorie_volume_unit" onchange="updateDilutionCalorieVolumeDisplay(); calculateDilution();">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quart</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter">Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="dilution_calorie_note">100 mL = 3.38 US fl oz = 3.52 UK fl oz</div>
+
 <button onclick="calculateDilution()">Calculate Water Needed</button>
 <div class="result" id="dilution_output"></div>
 
@@ -466,6 +486,7 @@
 <div class="unit-note" id="batch2_volume_note">10 L = 2.64 US gal = 2.20 UK gal</div>
 <button onclick="calculateBlending()">Calculate Blend Result</button>
 <div class="result" id="blending_output"></div>
+
 
 <script>
         // Theme management
@@ -624,7 +645,7 @@
                 `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
         }
 
-        function updateCurrentVolumeDisplay() {
+        function updateDilutionCurrentVolumeDisplay() {
             const value = parseFloat(document.getElementById("current_volume").value) || 0;
             const unit = document.getElementById("current_volume_unit").value;
             const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
@@ -660,15 +681,15 @@
                 `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
         }
 
-        function updateGeneralVolumeDisplay() {
-            const value = parseFloat(document.getElementById("general_volume_input").value) || 0;
-            const unit = document.getElementById("general_volume_unit").value;
+        function updateDilutionCalorieVolumeDisplay() {
+            const value = parseFloat(document.getElementById("dilution_calorie_volume_input").value) || 0;
+            const unit = document.getElementById("dilution_calorie_volume_unit").value;
             const valueInMl = convertToMl(value, unit);
             
             const usFlOz = convertFromMl(valueInMl, 'us_fl_oz');
             const ukFlOz = convertFromMl(valueInMl, 'uk_fl_oz');
             
-            document.getElementById("general_volume_note").textContent = 
+            document.getElementById("dilution_calorie_note").textContent = 
                 `${valueInMl.toFixed(0)} mL = ${usFlOz.toFixed(2)} US fl oz = ${ukFlOz.toFixed(2)} UK fl oz`;
         }
 
@@ -1101,6 +1122,7 @@
 
             if (!isNaN(abv) && !isNaN(volume) && !isNaN(factor) && abv > 0 && volume > 0 && factor > 0) {
                 const sugar_required = abv * volume * factor;
+                const sugar_required_oz = convertFromGrams(sugar_required, 'oz');
 
                 // Calculate estimated OG (SG) from required sugar using corrected formulas
                 const sugar_concentration_gl = sugar_required / volume;
@@ -1114,7 +1136,7 @@
                 
                 document.getElementById("required_sugar_output").innerHTML =
                   //`<strong>Estimated OG (SG):</strong> ${estimated_og_sg.toFixed(3)}<br>` +
-                    `<strong>Required Sugar:</strong> ${sugar_required.toFixed(2)} grams<br>` +
+                    `<strong>Required Sugar:</strong> ${sugar_required.toFixed(2)} grams (${sugar_required_oz.toFixed(2)} oz)<br>` +
                     `(to reach ${abv.toFixed(2)}% ABV in ${displayVolume} ${unitText} [${volume.toFixed(1)}L] using ${factor}g/L per 1% ABV)`;
             } else {
                 document.getElementById("required_sugar_output").innerHTML =
@@ -1173,11 +1195,13 @@
                 }
 
                 const primingSugarGrams = requiredCo2FromPriming * volumeLiters * sugarFactor;
+                const primingSugarOunces = convertFromGrams(primingSugarGrams, 'oz');
+
                 const unitText = volumeUnit === 'liter' ? 'L' : getUnitDisplayText(volumeUnit).trim();
                 const displayVolume = volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
 
                 document.getElementById("priming_output").innerHTML =
-                    `<strong>Required Priming Sugar:</strong> ${primingSugarGrams.toFixed(2)} grams (${sugarType})<br>
+                    `<strong>Required Priming Sugar:</strong> ${primingSugarGrams.toFixed(2)} grams (${primingSugarOunces.toFixed(2)} oz) (${sugarType})<br>
                     (for ${co2Volumes.toFixed(1)} volumes CO2 in ${displayVolume} ${unitText} at ${currentTemp}°C)`;
             } else {
                 document.getElementById("priming_output").innerHTML =
@@ -1191,30 +1215,61 @@
             const currentVolumeUnit = document.getElementById("current_volume_unit").value;
             const targetAbv = parseFloat(document.getElementById("target_abv_dilution").value);
 
+            const dilutionCalorieVolumeInput = parseFloat(document.getElementById("dilution_calorie_volume_input").value);
+            const dilutionCalorieVolumeUnit = document.getElementById("dilution_calorie_volume_unit").value;
+
             // Convert current volume to liters
             const currentVolumeL = currentVolumeUnit === 'liter' ? currentVolumeInput : convertToMl(currentVolumeInput, currentVolumeUnit) / 1000;
+            const dilutionCalorieVolumeMl = convertToMl(dilutionCalorieVolumeInput, dilutionCalorieVolumeUnit);
 
-            if (!isNaN(currentAbv) && !isNaN(currentVolumeL) && !isNaN(targetAbv) && 
-                currentAbv > 0 && currentVolumeL > 0 && targetAbv > 0) {
-                
-                if (targetAbv >= currentAbv) {
-                    document.getElementById("dilution_output").innerHTML =
-                        `<span class="active">Target ABV must be lower than Current ABV for dilution.</span>`;
-                    return;
-                }
 
-                const waterNeededL = (currentAbv * currentVolumeL / targetAbv) - currentVolumeL;
-                
-                const unitText = currentVolumeUnit === 'liter' ? 'L' : getUnitDisplayText(currentVolumeUnit).trim();
-                const displayCurrentVolume = currentVolumeInput.toFixed(currentVolumeInput % 1 === 0 ? 0 : 2);
-
+            if (isNaN(currentAbv) || isNaN(currentVolumeL) || isNaN(targetAbv) || 
+                currentAbv < 0 || currentVolumeL <= 0 || targetAbv < 0) {
                 document.getElementById("dilution_output").innerHTML =
-                    `<strong>Water Needed:</strong> ${waterNeededL.toFixed(2)} Liters<br>
-                    (to dilute ${displayCurrentVolume} ${unitText} at ${currentAbv.toFixed(1)}% ABV to ${targetAbv.toFixed(1)}% ABV)`;
-            } else {
-                document.getElementById("dilution_output").innerHTML =
-                    `<span class="active">Please enter valid non-zero values for current ABV, current volume, and target ABV.</span>`;
+                    `<span class="active">Please enter valid non-negative ABV and non-zero volume.</span>`;
+                return;
             }
+            
+            if (targetAbv >= currentAbv && currentAbv !== 0) { // Allow targetAbv to be 0 for non-alcoholic
+                document.getElementById("dilution_output").innerHTML =
+                    `<span class="active">Target ABV must be lower than Current ABV for dilution (unless current ABV is 0).</span>`;
+                return;
+            }
+
+            let waterNeededL = 0;
+            if (targetAbv !== 0) {
+                waterNeededL = (currentAbv * currentVolumeL / targetAbv) - currentVolumeL;
+            } else if (currentAbv > 0) { // Diluting to 0 ABV
+                waterNeededL = (currentAbv * currentVolumeL) / 0.0001; // Effectively infinite water
+            }
+            // If currentAbv is 0 and targetAbv is 0, waterNeededL remains 0.
+
+            const totalVolumeL = currentVolumeL + waterNeededL;
+            const totalVolumeMl = totalVolumeL * 1000;
+
+            // Calculate total Kcal for the final diluted product (assuming 0 residual sugar for dilution)
+            const totalKcal = (totalVolumeMl * (targetAbv / 100) * 0.789) * 7;
+
+            // Calculate Kcal for the user-specified volume
+            const specificKcal = (dilutionCalorieVolumeMl * (targetAbv / 100) * 0.789) * 7;
+            
+            const unitText = currentVolumeUnit === 'liter' ? 'L' : getUnitDisplayText(currentVolumeUnit).trim();
+            const displayCurrentVolume = currentVolumeInput.toFixed(currentVolumeInput % 1 === 0 ? 0 : 2);
+
+            const dilutionCalorieUnitDisplayText = getUnitDisplayText(dilutionCalorieVolumeUnit);
+            const dilutionCalorieVolumeDisplayValue = dilutionCalorieVolumeUnit === 'ml' ? dilutionCalorieVolumeMl.toFixed(0) : dilutionCalorieVolumeInput.toFixed(dilutionCalorieVolumeInput % 1 === 0 ? 0 : 2);
+
+            // Convert liters to US fl oz for display
+            const waterNeededUsFlOz = convertFromMl(waterNeededL * 1000, 'us_fl_oz');
+            const totalVolumeUsFlOz = convertFromMl(totalVolumeL * 1000, 'us_fl_oz');
+
+
+            document.getElementById("dilution_output").innerHTML =
+                `<strong>Water Needed:</strong> ${waterNeededL.toFixed(2)} Liters (${waterNeededUsFlOz.toFixed(2)} US fl oz)<br>
+                <strong>Total Final Volume:</strong> ${totalVolumeL.toFixed(2)} Liters (${totalVolumeUsFlOz.toFixed(2)} US fl oz)<br>
+                <strong>Estimated Total Kcal:</strong> ${totalKcal.toFixed(0)} Kcal<br>
+                <strong>Estimated Kcal per ${dilutionCalorieVolumeDisplayValue}${dilutionCalorieUnitDisplayText}:</strong> ${specificKcal.toFixed(0)} Kcal<br>
+                (to dilute ${displayCurrentVolume} ${unitText} at ${currentAbv.toFixed(1)}% ABV to ${targetAbv.toFixed(1)}% ABV)`;
         }
 
         function calculateBlending() {
@@ -1255,82 +1310,6 @@
             }
         }
 
-        // Helper function for general calorie calculation (alcohol + residual sugar)
-        function calculateSimpleCalories(abv, volumeMl, residualSugarGrams) {
-            if (isNaN(abv) || isNaN(volumeMl) || volumeMl <= 0 || abv < 0 || isNaN(residualSugarGrams) || residualSugarGrams < 0) {
-                return 0;
-            }
-            // Calories from alcohol: (Volume in mL * (ABV / 100) * Density of Ethanol (0.789 g/mL)) * 7 kcal/g
-            const caloriesFromAlcohol = (volumeMl * (abv / 100) * 0.789) * 7;
-            // Calories from residual sugar: (grams of sugar) * 4 kcal/g
-            const caloriesFromSugar = residualSugarGrams * 4;
-            return caloriesFromAlcohol + caloriesFromSugar;
-        }
-
-        // Default sugar concentrations in g/L for different drink types
-        const defaultSugarConcentrationsGL = {
-            pure_spirits: 0,
-            wine: 10, // g/L
-            beer_cider: 10, // g/L
-            liqueur_sweetened: 150 // g/L
-        };
-
-        function updateGeneralCalorieDefaults() {
-            const drinkType = document.getElementById("general_drink_type").value;
-            const volumeInput = parseFloat(document.getElementById("general_volume_input").value);
-            const volumeUnit = document.getElementById("general_volume_unit").value;
-            let addedSugarInput = document.getElementById("added_sugar_grams");
-
-            const volumeLiters = volumeUnit === 'liter' ? volumeInput : convertToMl(volumeInput, volumeUnit) / 1000;
-
-            if (isNaN(volumeLiters) || volumeLiters <= 0) {
-                addedSugarInput.value = 0;
-                addedSugarInput._lastDefaultValue = 0; // Ensure last default is also 0
-                return;
-            }
-
-            const defaultSugarGL = defaultSugarConcentrationsGL[drinkType];
-            const calculatedDefaultSugarGrams = defaultSugarGL * volumeLiters;
-
-            // Always update to 0 for pure spirits, otherwise use the dynamic default logic
-            if (drinkType === 'pure_spirits') {
-                addedSugarInput.value = 0;
-                addedSugarInput._lastDefaultValue = 0;
-            } else if (addedSugarInput.value === "" || parseFloat(addedSugarInput.value) === 0 || addedSugarInput._lastDefaultValue === undefined || addedSugarInput._lastDefaultValue === parseFloat(addedSugarInput.value)) {
-                addedSugarInput.value = calculatedDefaultSugarGrams.toFixed(1);
-            }
-            addedSugarInput._lastDefaultValue = calculatedDefaultSugarGrams.toFixed(1); // Store the last default value set by the system
-            
-            calculateGeneralCalories(); // Recalculate calories after updating default
-        }
-
-
-        function calculateGeneralCalories() {
-            const drinkType = document.getElementById("general_drink_type").value;
-            const abv = parseFloat(document.getElementById("general_abv").value);
-            const volumeInput = parseFloat(document.getElementById("general_volume_input").value);
-            const volumeUnit = document.getElementById("general_volume_unit").value;
-            let addedSugarGrams = parseFloat(document.getElementById("added_sugar_grams").value) || 0;
-
-            const volumeMl = convertToMl(volumeInput, volumeUnit);
-
-            if (isNaN(abv) || isNaN(volumeMl) || volumeMl <= 0 || abv < 0) {
-                document.getElementById("general_calories_output").innerHTML =
-                    `<span class="active">Please enter valid non-negative ABV and non-zero volume.</span>`;
-                return;
-            }
-
-            // Use the general purpose calorie calculator
-            const totalCalories = calculateSimpleCalories(abv, volumeMl, addedSugarGrams);
-
-            const unitText = getUnitDisplayText(volumeUnit);
-            const displayVolume = volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
-
-            document.getElementById("general_calories_output").innerHTML =
-                `<strong>Total Estimated Calories:</strong> ${totalCalories.toFixed(0)} Kcal<br>
-                (for ${displayVolume}${unitText} at ${abv.toFixed(1)}% ABV, with ${addedSugarGrams.toFixed(1)}g residual/added sugar)`;
-        }
-
 
         // Initialize displays on page load
         window.onload = function() {
@@ -1344,7 +1323,8 @@
             document.getElementById("current_volume_unit").innerHTML = commonVolumeOptions;
             document.getElementById("batch1_volume_unit").innerHTML = commonVolumeOptions;
             document.getElementById("batch2_volume_unit").innerHTML = commonVolumeOptions;
-            document.getElementById("general_volume_unit").innerHTML = commonVolumeOptions;
+            document.getElementById("dilution_calorie_volume_unit").innerHTML = commonVolumeOptions;
+
 
             // Re-select default options after setting innerHTML
             document.getElementById("volume_unit").value = "ml";
@@ -1355,7 +1335,7 @@
             document.getElementById("current_volume_unit").value = "liter";
             document.getElementById("batch1_volume_unit").value = "liter";
             document.getElementById("batch2_volume_unit").value = "liter";
-            document.getElementById("general_volume_unit").value = "ml";
+            document.getElementById("dilution_calorie_volume_unit").value = "ml";
 
 
             // Trigger initial calculations for all sections
@@ -1375,15 +1355,13 @@
             updatePrimeVolumeDisplay(); 
             calculatePrimingSugar();
 
-            updateCurrentVolumeDisplay(); 
+            updateDilutionCurrentVolumeDisplay(); 
+            updateDilutionCalorieVolumeDisplay();
             calculateDilution();
 
             updateBatch1VolumeDisplay(); 
             updateBatch2VolumeDisplay(); 
             calculateBlending();
-
-            updateGeneralVolumeDisplay(); 
-            updateGeneralCalorieDefaults(); // This will set initial default sugar and then call calculateGeneralCalories
         };
 </script>
 </body>
