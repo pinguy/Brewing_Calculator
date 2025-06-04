@@ -101,13 +101,14 @@
             color: var(--text-color);
         }
 
-        input[type="number"], select {
+        /* Updated input styling to include text type and ensure consistent color */
+        input[type="number"], input[type="text"], select {
             width: 100%;
             padding: 6px; /* Reduced padding */
             background: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            color: var(--text-color);
+            color: var(--text-color); /* Explicitly set text color */
             font-size: 0.9em; /* Slightly smaller font size */
         }
 
@@ -305,7 +306,6 @@
     <div class="unit-note" id="volume_note">500 mL = 16.91 US fl oz = 17.60 UK fl oz</div>
     <button onclick="calculateRefractometerAndEnableUpdates()">Calculate</button>
     <div class="result" id="output"></div>
-    <canvas id="abvChartRefractometer" width="600" height="300"></canvas>
 </div>
 
 <h2>Traditional Hydrometer (SG) Calculator</h2>
@@ -335,6 +335,13 @@
     <button onclick="calculateHydrometerAndEnableUpdates()">Calculate from SG</button>
     <div class="result" id="sg_output"></div>
     <canvas id="abvChartHydrometer" width="600" height="300"></canvas>
+
+    <h3>SG Readings Over Time</h3>
+    <div id="sg_readings_container">
+        <!-- Dynamic readings will be added here -->
+    </div>
+    <button onclick="addSgReadingField()">Add New Reading</button>
+    <!-- Removed the "Output All Data" button as requested -->
 </div>
 
 <h2>Simple Sugar to ABV Estimator</h2>
@@ -419,7 +426,7 @@
             <option value="us_quart">US quart</option>
             <option value="uk_quart">UK quarts</option>
             <option value="us_gallon">US gallon</option>
-            <option value="uk_gallon">UK gallon</option>
+            <option value="uk_gallon">UK gallon</loption>
             <option value="liter">Liter</option>
         </select>
     </div>
@@ -510,7 +517,7 @@
     </div>
     <div class="unit-note" id="batch1_volume_note">15 L = 3.96 US gal = 3.30 UK gal</div>
     <label for="batch2_abv">Batch 2 ABV (%):</label>
-    <input id="batch2_abv" step="0.01" type="number" value="11.5"/>
+    <input id="batch2_abv" step="0.01" type="number" value="9.55"/>
     <label for="batch2_volume">Batch 2 Volume:</label>
     <div class="volume-input-group">
         <input id="batch2_volume" step="0.01" type="number" value="700"/>
@@ -743,7 +750,7 @@
         let abvChartRefractometer;
         let abvChartHydrometer;
 
-        function updateChart(canvasId, sgVals, abvVal) {
+        function updateChart(canvasId, sgVals, abvVal, labels = ['Original', 'Final']) {
             const ctx = document.getElementById(canvasId).getContext('2d');
             let chart;
 
@@ -752,7 +759,7 @@
                 chart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: ['Original', 'Final'],
+                        labels: labels, // Use provided labels
                         datasets: [{
                             label: 'SG Progress',
                             data: sgVals,
@@ -776,7 +783,7 @@
                 chart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: ['Original', 'Final'],
+                        labels: labels, // Use provided labels
                         datasets: [{
                             label: 'SG Progress',
                             data: sgVals,
@@ -914,66 +921,139 @@
             updateChart('abvChartRefractometer', [og_sg, FG], abv_std.toFixed(2));
         }
 
-        function calculateSG() {
+        let sgReadingCounter = 0; // To give unique IDs to new fields
+
+        function addSgReadingField() {
+            sgReadingCounter++;
+            const container = document.getElementById('sg_readings_container');
+
+            const readingDiv = document.createElement('div');
+            readingDiv.className = 'volume-input-group'; // Reuse styling
+            readingDiv.dataset.readingId = sgReadingCounter; // Unique identifier for the row
+
+            const labelDay = document.createElement('label');
+            labelDay.htmlFor = `sg_day_${sgReadingCounter}`;
+            labelDay.textContent = `Day/Time ${sgReadingCounter}:`;
+
+            const inputDay = document.createElement('input');
+            inputDay.type = 'text';
+            inputDay.id = `sg_day_${sgReadingCounter}`;
+            inputDay.value = `Day ${sgReadingCounter}`; // Default value
+            inputDay.oninput = calculateSG; // Update chart labels on input
+
+            const labelGravity = document.createElement('label');
+            labelGravity.htmlFor = `sg_value_${sgReadingCounter}`;
+            labelGravity.textContent = `Current Gravity:`;
+
+            const inputGravity = document.createElement('input');
+            inputGravity.type = 'number';
+            inputGravity.step = '0.001';
+            inputGravity.id = `sg_value_${sgReadingCounter}`;
+            inputGravity.value = '1.005'; // Default value
+            inputGravity.oninput = calculateSG; // Update chart data on input
+
+            readingDiv.appendChild(labelDay);
+            readingDiv.appendChild(inputDay);
+            readingDiv.appendChild(labelGravity);
+            readingDiv.appendChild(inputGravity);
+
+            container.appendChild(readingDiv);
+
+            // Call calculateSG immediately after adding a new field to update the graph
+            calculateSG();
+        }
+
+        // Helper function to get all current SG calculator stats
+        function getSgCalculatorStats() {
             const og_sg = parseFloat(document.getElementById("og_sg").value);
-            const fg_sg = parseFloat(document.getElementById("fg_sg").value);
-            const volumeInput = parseFloat(document.getElementById("volume_input_sg").value); // Get volume input
-            const volumeUnit = document.getElementById("volume_unit_sg").value;
+            let fg_sg_current = parseFloat(document.getElementById("fg_sg").value); // The initial FG input
 
-            // Add this input validation check
-            if (isNaN(og_sg) || isNaN(fg_sg) || isNaN(volumeInput)) {
-                document.getElementById("sg_output").innerHTML =
-                    '<span class="active">Please enter valid numeric values for OG, FG, and Volume.</span>';
+            const chartLabels = ['Original Gravity'];
+            const chartData = [og_sg];
+            const allReadings = [{ label: 'Original Gravity', value: og_sg }];
 
-                // Optionally, clear or reset the chart if it exists
-                if (typeof abvChartHydrometer !== 'undefined' && abvChartHydrometer) {
-                    abvChartHydrometer.destroy();
-                    abvChartHydrometer = null; // Ensure it's re-initialized next time
+            const dynamicReadingDivs = document.querySelectorAll('#sg_readings_container > div');
+            dynamicReadingDivs.forEach(div => {
+                const dayInput = div.querySelector('input[type="text"]');
+                const gravityInput = div.querySelector('input[type="number"]');
+                const dayLabel = dayInput ? dayInput.value : 'Unknown Day';
+                const currentGravity = parseFloat(gravityInput.value);
+                if (!isNaN(currentGravity)) {
+                    chartLabels.push(dayLabel);
+                    chartData.push(currentGravity);
+                    allReadings.push({ label: dayLabel, value: currentGravity });
+                    fg_sg_current = currentGravity; // Update fg_sg_current to the most recent reading
                 }
-                return; // Stop further execution
+            });
+
+            // Ensure the initial FG is included if no dynamic readings or if it's different from the last dynamic reading
+            if (dynamicReadingDivs.length === 0 || (allReadings.length > 0 && allReadings[allReadings.length - 1].value !== parseFloat(document.getElementById("fg_sg").value))) {
+                chartLabels.push('Final Gravity');
+                chartData.push(parseFloat(document.getElementById("fg_sg").value));
+                allReadings.push({ label: 'Final Gravity', value: parseFloat(document.getElementById("fg_sg").value) });
+                fg_sg_current = parseFloat(document.getElementById("fg_sg").value);
             }
 
-            const volumeMl = convertToMl(volumeInput, volumeUnit);
 
-            // Calculate ABV using standard formula
-            const abv_std = (og_sg - fg_sg) * 131.25;
-            const abv_alt = ((76.08 * (og_sg - fg_sg)) / (1.775 - og_sg)) * (fg_sg / 0.794);
-
-            // Calculate residual sugar in g/L and for the specified volume
-            const residualSugarGL = calculateResidualSugar(fg_sg);
-            const residualSugarInVolume = (residualSugarGL * volumeMl) / 1000;
-
-            // Calculate calories for Alcohol & Sugar
-            const alcoholAndSugarCalories = (volumeMl * (abv_std / 100) * 0.789) * 7 + (residualSugarInVolume * 4);
-
-            // Calculate sweetness percentage for visual display (0-100%)
-            const sweetnessPercentage = calculateSweetnessPercentage(residualSugarGL);
-
-            // Calculate sweetness classification
-            const sweetness = getSweetnessClassification(fg_sg, Math.max(abv_std, abv_alt));
-
+            const abv_std = (og_sg - fg_sg_current) * 131.25;
+            const abv_alt = ((76.08 * (og_sg - fg_sg_current)) / (1.775 - og_sg)) * (fg_sg_current / 0.794);
+            const residualSugarGL = calculateResidualSugar(fg_sg_current);
+            const attenuation = (og_sg - 1) !== 0 ? ((og_sg - fg_sg_current) / (og_sg - 1)) * 100 : 0;
             const final_target_FG = 1.0001;
             let fermentation_progress = 0;
             if ((og_sg - final_target_FG) !== 0) {
-                 fermentation_progress = ((og_sg - fg_sg) / (og_sg - final_target_FG)) * 100;
-            } else if (og_sg <= fg_sg) {
-                 fermentation_progress = (fg_sg >= final_target_FG && og_sg >= final_target_FG) ? 100 : 0;
+                fermentation_progress = ((og_sg - fg_sg_current) / (og_sg - final_target_FG)) * 100;
+            } else if (og_sg <= fg_sg_current) {
+                fermentation_progress = (fg_sg_current >= final_target_FG && og_sg >= final_target_FG) ? 100 : 0;
             }
+
+            return {
+                og_sg: og_sg,
+                fg_sg: fg_sg_current,
+                abv_std: abv_std,
+                abv_alt: abv_alt,
+                attenuation: attenuation,
+                residualSugarGL: residualSugarGL,
+                fermentation_progress: fermentation_progress,
+                chartLabels: chartLabels,
+                chartData: chartData,
+                allReadings: allReadings // Include all readings for output
+            };
+        }
+
+
+        function calculateSG() {
+            const stats = getSgCalculatorStats(); // Get all stats and data
+            const volumeInput = parseFloat(document.getElementById("volume_input_sg").value);
+            const volumeUnit = document.getElementById("volume_unit_sg").value;
+            const volumeMl = convertToMl(volumeInput, volumeUnit);
+
+
+            if (isNaN(stats.og_sg) || isNaN(stats.fg_sg) || isNaN(volumeMl)) {
+                document.getElementById("sg_output").innerHTML = '<span class="active">Please enter valid numeric values for OG, FG, and Volume.</span>';
+                if (abvChartHydrometer) { abvChartHydrometer.destroy(); abvChartHydrometer = null; }
+                return;
+            }
+
+            const residualSugarInVolume = (stats.residualSugarGL * volumeMl) / 1000;
+            const alcoholAndSugarCalories = (volumeMl * (stats.abv_std / 100) * 0.789) * 7 + (residualSugarInVolume * 4);
+            const sweetnessPercentage = calculateSweetnessPercentage(stats.residualSugarGL);
+            const sweetness = getSweetnessClassification(stats.fg_sg, Math.max(stats.abv_std, stats.abv_alt));
 
 
             let statusText = "";
             let statusClass = "status ";
             let progressClass = "progress ";
 
-            if (fermentation_progress >= 99 && fg_sg <= (final_target_FG + 0.001)) {
+            if (stats.fermentation_progress >= 99 && stats.fg_sg <= (stats.final_target_FG + 0.001)) {
                 statusText = "Fermentation Complete (dry).";
                 statusClass += "complete";
                 progressClass += "complete";
-            } else if (fermentation_progress >= 93) {
+            } else if (stats.fermentation_progress >= 93) {
                 statusText = "Fermentation nearly complete or complete (check FG).";
                 statusClass += "complete";
                 progressClass += "complete";
-            } else if (fermentation_progress >= 83) {
+            } else if (stats.fermentation_progress >= 83) {
                 statusText = "Fermentation well underway.";
                 statusClass += "nearly";
                 progressClass += "nearly";
@@ -983,24 +1063,16 @@
                 progressClass += "active";
             }
 
-            // Calculate Attenuation
-            let attenuation = 0;
-            if ((og_sg - 1) !== 0) {
-                attenuation = ((og_sg - fg_sg) / (og_sg - 1)) * 100;
-            }
-
-
-            // Get unit display text
             const unitDisplayText = getUnitDisplayText(volumeUnit);
             const volumeDisplayValue = volumeUnit === 'ml' ? volumeMl.toFixed(0) : volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
 
             document.getElementById("sg_output").innerHTML = `
-                <strong>Original Gravity (OG):</strong> ${og_sg.toFixed(3)}<br>
-                <strong>Final Gravity (FG):</strong> ${fg_sg.toFixed(3)}<br>
-                <strong>ABV (Standard Formula):</strong> ${abv_std.toFixed(2)}%<br>
-                <strong>ABV (Alternate Formula):</strong> ${abv_alt.toFixed(2)}%<br>
-                <strong>Apparent Attenuation:</strong> ${attenuation.toFixed(2)}%<br>
-                <strong>Residual Sugar:</strong> ${residualSugarGL.toFixed(1)} g/L (${residualSugarInVolume.toFixed(1)}g in ${volumeDisplayValue}${unitDisplayText})<br>
+                <strong>Original Gravity (OG):</strong> ${stats.og_sg.toFixed(3)}<br>
+                <strong>Final Gravity (FG):</strong> ${stats.fg_sg.toFixed(3)} (based on most recent reading)<br>
+                <strong>ABV (Standard Formula):</strong> ${stats.abv_std.toFixed(2)}%<br>
+                <strong>ABV (Alternate Formula):</strong> ${stats.abv_alt.toFixed(2)}%<br>
+                <strong>Apparent Attenuation:</strong> ${stats.attenuation.toFixed(2)}%<br>
+                <strong>Residual Sugar:</strong> ${stats.residualSugarGL.toFixed(1)} g/L (${residualSugarInVolume.toFixed(1)}g in ${volumeDisplayValue}${unitDisplayText})<br>
                 <strong>Sweetness Level:</strong> ${sweetnessPercentage.toFixed(0)}%<br>
                 <div class="sweetness-bar-container">
                     <div class="sweetness-indicator" style="left: ${Math.min(100, Math.max(0, sweetnessPercentage))}%;"></div>
@@ -1012,11 +1084,61 @@
                 </div>
                 <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText} for Alcohol & Sugar:</strong> ${alcoholAndSugarCalories.toFixed(0)} Kcal<br>
                 <strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})<br>
-                <div class="${progressClass}">Fermentation Progress: ${fermentation_progress.toFixed(1)}%</div>
+                <div class="${progressClass}">Fermentation Progress: ${stats.fermentation_progress.toFixed(1)}%</div>
                 <div class="${statusClass}">${statusText}</div>
             `;
-            updateChart('abvChartHydrometer', [og_sg, fg_sg], abv_std.toFixed(2));
+            updateChart('abvChartHydrometer', stats.chartData, stats.abv_std.toFixed(2), stats.chartLabels);
         }
+
+        function outputHydrometerData() {
+            const stats = getSgCalculatorStats(); // Get all stats and data
+            const volumeInput = parseFloat(document.getElementById("volume_input_sg").value);
+            const volumeUnit = document.getElementById("volume_unit_sg").value;
+            const volumeMl = convertToMl(volumeInput, volumeUnit);
+
+            const residualSugarInVolume = (stats.residualSugarGL * volumeMl) / 1000;
+            const alcoholAndSugarCalories = (volumeMl * (stats.abv_std / 100) * 0.789) * 7 + (residualSugarInVolume * 4);
+            const sweetnessPercentage = calculateSweetnessPercentage(stats.residualSugarGL);
+            const sweetness = getSweetnessClassification(stats.fg_sg, Math.max(stats.abv_std, stats.abv_alt));
+            const unitDisplayText = getUnitDisplayText(volumeUnit);
+            const volumeDisplayValue = volumeUnit === 'ml' ? volumeMl.toFixed(0) : volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
+
+
+            let outputHtml = '<h3>Hydrometer Data & Statistics Output</h3>';
+            outputHtml += '<div class="result">'; // Reuse result styling for the output block
+
+            outputHtml += `<h4>Recorded Gravity Readings:</h4>`;
+            outputHtml += `<ul>`;
+            stats.allReadings.forEach(reading => {
+                outputHtml += `<li><strong>${reading.label}:</strong> ${reading.value.toFixed(3)}</li>`;
+            });
+            outputHtml += `</ul>`;
+
+            outputHtml += `<h4>Calculated Statistics:</h4>`;
+            outputHtml += `<p><strong>Original Gravity (OG):</strong> ${stats.og_sg.toFixed(3)}</p>`;
+            outputHtml += `<p><strong>Final Gravity (FG):</strong> ${stats.fg_sg.toFixed(3)} (based on most recent reading)</p>`;
+            outputHtml += `<p><strong>ABV (Standard Formula):</strong> ${stats.abv_std.toFixed(2)}%</p>`;
+            outputHtml += `<p><strong>ABV (Alternate Formula):</strong> ${stats.abv_alt.toFixed(2)}%</p>`;
+            outputHtml += `<p><strong>Apparent Attenuation:</strong> ${stats.attenuation.toFixed(2)}%</p>`;
+            outputHtml += `<p><strong>Residual Sugar:</strong> ${stats.residualSugarGL.toFixed(1)} g/L (${residualSugarInVolume.toFixed(1)}g in ${volumeDisplayValue}${unitDisplayText})</p>`;
+            outputHtml += `<p><strong>Sweetness Level:</strong> ${sweetnessPercentage.toFixed(0)}%</p>`;
+            outputHtml += `<p><strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText} for Alcohol & Sugar:</strong> ${alcoholAndSugarCalories.toFixed(0)} Kcal</p>`;
+            outputHtml += `<p><strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})</p>`;
+            outputHtml += `<p><strong>Fermentation Progress:</strong> ${stats.fermentation_progress.toFixed(1)}%</p>`;
+
+            outputHtml += '</div>'; // Close result div
+
+            // Create a new div to hold the output, or update an existing one
+            let outputDiv = document.getElementById('full_hydrometer_output');
+            if (!outputDiv) {
+                outputDiv = document.createElement('div');
+                outputDiv.id = 'full_hydrometer_output';
+                outputDiv.className = 'calculator-section'; // Apply section styling
+                document.body.appendChild(outputDiv); // Add to the body
+            }
+            outputDiv.innerHTML = outputHtml;
+        }
+
 
         function getUnitDisplayText(unit) {
             const unitNames = {
