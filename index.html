@@ -237,9 +237,9 @@
 <h2>Refractometer ABV/Brix Calculator</h2>
 <div class="wcf-container">
 <label for="og_brix">Original Brix (WRI):</label>
-<input id="og_brix" step="0.01" type="number" value="18.0"/>
+<input id="og_brix" step="0.01" type="number" value="18.0" oninput="calculate()"/>
 <label for="fg_brix">Current Brix (WRI):</label>
-<input id="fg_brix" step="0.01" type="number" value="5.0"/>
+<input id="fg_brix" step="0.01" type="number" value="5.0" oninput="calculate()"/>
         <label for="wcf" class="wcf-label">Wort Correction Factor</label>
         <div class="wcf-description">
             Fine-tune this factor using a <span class="highlight">completed bone dry batch</span> where you know the exact sugar additions or tested with a Hydrometer.
@@ -250,11 +250,11 @@
             <span class="tip-icon">💡</span>
             <strong>Pro Tip:</strong> Use the Simple Sugar to ABV Estimator below to verify your expected ABV from total sugar and volume.
         </div>
-<input id="wcf" step="0.001" type="number" value="1.038"/>
+<input id="wcf" step="0.001" type="number" value="1.038" oninput="calculate()"/>
 <label for="volume_input">Volume for Calorie Calculation:</label>
 <div class="volume-input-group">
-    <input id="volume_input" step="0.01" type="number" value="500"/>
-    <select id="volume_unit" onchange="updateVolumeDisplay()">
+    <input id="volume_input" step="0.01" type="number" value="500" oninput="updateVolumeDisplay(); calculate()"/>
+    <select id="volume_unit" onchange="updateVolumeDisplay(); calculate()">
         <option value="ml">mL</option>
         <option value="us_fl_oz">US fl oz</option>
         <option value="uk_fl_oz">UK fl oz</option>
@@ -276,175 +276,13 @@
 
 <h2>Traditional Hydrometer (SG) Calculator</h2>
 <label for="og_sg">Original Gravity (OG):</label>
-<input id="og_sg" step="0.001" type="number" value="1.0713"/>
+<input id="og_sg" step="0.001" type="number" value="1.0713" oninput="calculateSG()"/>
 <label for="fg_sg">Final Gravity (FG):</label>
-<input id="fg_sg" step="0.001" type="number" value="0.9985"/>
+<input id="fg_sg" step="0.001" type="number" value="0.9985" oninput="calculateSG()"/>
 <label for="volume_input_sg">Volume for Calorie Calculation:</label>
 <div class="volume-input-group">
-    <input id="volume_input_sg" step="0.01" type="number" value="500"/>
-    <select id="volume_unit_sg" onchange="updateVolumeDisplaySG()">
-        <option value="ml">mL</option>
-        <option value="us_fl_oz">US fl oz</option>
-        <option value="uk_fl_oz">UK fl oz</option>
-        <option value="us_cup">US cup</option>
-        <option value="us_pint">US pint</option>
-        <option value="uk_pint">UK pint</option>
-        <option value="us_quart">US quart</option>
-        <option value="uk_quart">UK quarts</option>
-        <option value="us_gallon">US gallon</option>
-        <option value="uk_gallon">UK gallon</option>
-        <option value="liter">Liter</option>
-    </select>
-</div>
-<div class="unit-note" id="volume_note_sg">500 mL = 16.91 US fl oz = 17.60 UK fl oz</div>
-<button onclick="calculateSG()">Calculate from SG</button>
-<div class="result" id="sg_output"></div>
-<canvas id="abvChartHydrometer" width="600" height="300"></canvas>
-
-<h2>Simple Sugar to ABV Estimator</h2>
-<label for="sugar_amount">Total Sugar Used:</label>
-<div class="volume-input-group">
-    <input id="sugar_amount" step="0.01" type="number" value="4018"/>
-    <select id="sugar_unit" onchange="updateSugarDisplay()">
-        <option value="grams" selected>Grams</option>
-        <option value="kg">Kilograms</option>
-        <option value="lbs">Pounds (lbs)</option>
-        <option value="oz">Ounces (oz)</option>
-        <option value="us_cups">US Cups</option>
-        <option value="uk_cups">UK Cups</option>
-    </select>
-</div>
-<div class="unit-note" id="sugar_note">3565 g = 3.57 kg = 7.86 lbs = 125.8 oz</div>
-<label for="volume_liters">Total Liquid Volume:</label>
-<div class="volume-input-group">
-    <input id="volume_liters" step="0.01" type="number" value="25"/>
-    <select id="batch_volume_unit" onchange="updateBatchVolumeDisplay()">
-        <option value="liter" selected>Liters</option>
-        <option value="us_gallon">US gallons</option>
-        <option value="uk_gallon">UK gallons</option>
-        <option value="us_quart">US quarts</option>
-        <option value="uk_quart">UK quarts</option>
-    </select>
-</div>
-<div class="unit-note" id="batch_volume_note">25 L = 6.60 US gal = 5.50 UK gal</div>
-<label for="conversion_factor">Sugar per 1% ABV (g/L):</label>
-<input id="conversion_factor" step="0.01" type="number" value="16.83"/>
-<button onclick="calculateSugarABV()">Estimate ABV</button>
-<div class="result" id="sugar_abv_output"></div>
-
-<h2>Target ABV to Sugar Requirement</h2>
-<label for="target_abv">Desired ABV (%):</label>
-<input id="target_abv" step="0.01" type="number" value="9.55"/>
-<label for="target_volume">Batch Volume:</label>
-<div class="volume-input-group">
-    <input id="target_volume" step="0.01" type="number" value="25"/>
-    <select id="target_volume_unit" onchange="updateTargetVolumeDisplay()">
-        <option value="liter" selected>Liters</option>
-        <option value="us_gallon">US gallons</option>
-        <option value="uk_gallon">UK gallons</option>
-        <option value="us_quart">US quarts</option>
-        <option value="uk_quart">UK quarts</option>
-    </select>
-</div>
-<div class="unit-note" id="target_volume_note">25 L = 6.60 US gal = 5.50 UK gal</div>
-<label for="target_factor">Sugar per 1% ABV (g/L):</label>
-<input id="target_factor" step="0.01" type="number" value="16.83"/>
-<button onclick="calculateRequiredSugar()">Calculate Required Sugar</button>
-<div class="result" id="required_sugar_output"></div>
-
-<h2>Priming Sugar Calculator</h2>
-<label for="prime_volume">Batch Volume:</label>
-<div class="volume-input-group">
-    <input id="prime_volume" step="0.01" type="number" value=".500"/>
-    <select id="prime_volume_unit" onchange="updatePrimeVolumeDisplay()">
-        <option value="liter" selected>Liters</option>
-        <option value="us_gallon">US gallons</option>
-        <option value="uk_gallon">UK gallons</option>
-        <option value="us_quart">US quarts</option>
-        <option value="uk_quart">UK quarts</option>
-    </select>
-</div>
-<div class="unit-note" id="prime_volume_note">25 L = 6.60 US gal = 5.50 UK gal</div>
-<label for="co2_volumes">Desired CO2 Volumes:</label>
-<input id="co2_volumes" step="0.1" type="number" value="2.5"/>
-<label for="current_temp">Current Temperature (°C):</label>
-<input id="current_temp" step="0.1" type="number" value="20"/>
-<label for="sugar_type">Sugar Type:</label>
-<select id="sugar_type">
-    <option value="table">Table Sugar (Sucrose)</option>
-    <option value="corn">Corn Sugar (Dextrose)</option>
-    <option value="dme">Dry Malt Extract</option>
-    <option value="honey">Honey</option>
-</select>
-<button onclick="calculatePrimingSugar()">Calculate Priming Sugar</button>
-<div class="result" id="priming_output"></div>
-
-<h2>Dilution Calculator</h2>
-<label for="current_abv">Current ABV (%):</label>
-<input id="current_abv" step="0.01" type="number" value="60"/>
-<label for="current_volume">Current Volume:</label>
-<div class="volume-input-group">
-    <input id="current_volume" step="0.01" type="number" value="1"/>
-    <select id="current_volume_unit" onchange="updateCurrentVolumeDisplay()">
-        <option value="liter" selected>Liters</option>
-        <option value="us_gallon">US gallons</option>
-        <option value="uk_gallon">UK gallons</option>
-        <option value="us_quart">US quarts</option>
-        <option value="uk_quart">UK quarts</option>
-    </select>
-</div>
-<div class="unit-note" id="current_volume_note">20 L = 5.28 US gal = 4.40 UK gal</div>
-<label for="target_abv_dilution">Target ABV (%):</label>
-<input id="target_abv_dilution" step="0.01" type="number" value="40"/>
-<button onclick="calculateDilution()">Calculate Water Needed</button>
-<div class="result" id="dilution_output"></div>
-
-<h2>Blending Calculator</h2>
-<label for="batch1_abv">Batch 1 ABV (%):</label>
-<input id="batch1_abv" step="0.01" type="number" value="40"/>
-<label for="batch1_volume">Batch 1 Volume:</label>
-<div class="volume-input-group">
-    <input id="batch1_volume" step="0.01" type="number" value="0.300"/>
-    <select id="batch1_volume_unit" onchange="updateBatch1VolumeDisplay()">
-        <option value="liter" selected>Liters</option>
-        <option value="us_gallon">US gallons</option>
-        <option value="uk_gallon">UK gallons</option>
-        <option value="us_quart">US quarts</option>
-        <option value="uk_quart">UK quarts</option>
-    </select>
-</div>
-<div class="unit-note" id="batch1_volume_note">15 L = 3.96 US gal = 3.30 UK gal</div>
-<label for="batch2_abv">Batch 2 ABV (%):</label>
-<input id="batch2_abv" step="0.01" type="number" value="9.55"/>
-<label for="batch2_volume">Batch 2 Volume:</label>
-<div class="volume-input-group">
-    <input id="batch2_volume" step="0.01" type="number" value=".700"/>
-    <select id="batch2_volume_unit" onchange="updateBatch2VolumeDisplay()">
-        <option value="liter" selected>Liters</option>
-        <option value="us_gallon">US gallons</option>
-        <option value="uk_gallon">UK gallons</option>
-        <option value="us_quart">US quarts</option>
-        <option value="uk_quart">UK quarts</option>
-    </select>
-</div>
-<div class="unit-note" id="batch2_volume_note">10 L = 2.64 US gal = 2.20 UK gal</div>
-<button onclick="calculateBlending()">Calculate Blend Result</button>
-<div class="result" id="blending_output"></div>
-
-<h2>General Liquid Calorie Calculator</h2>
-<label for="general_drink_type">Drink Type:</label>
-<select id="general_drink_type" onchange="calculateGeneralCalories()">
-    <option value="pure_spirits">Pure Spirits (e.g., Vodka, Gin)</option>
-    <option value="wine">Wine</option>
-    <option value="beer_cider" selected>Beer/Cider</option>
-    <option value="liqueur_sweetened">Liqueur/Sweetened Drink</option>
-</select>
-<label for="general_abv">ABV (%):</label>
-<input id="general_abv" step="0.01" type="number" value="5.0"/>
-<label for="general_volume_input">Volume:</label>
-<div class="volume-input-group">
-    <input id="general_volume_input" step="0.01" type="number" value="355"/>
-    <select id="general_volume_unit" onchange="updateGeneralVolumeDisplay(); calculateGeneralCalories();">
+    <input id="volume_input_sg" step="0.01" type="number" value="500" oninput="updateVolumeDisplaySG(); calculateSG()"/>
+    <select id="volume_unit_sg" onchange="updateVolumeDisplaySG(); calculateSG()">
         <option value="ml">mL</option>
         <option value="us_fl_oz">US fl oz</option>
         <option value="uk_fl_oz">UK fl oz</option>
@@ -458,12 +296,176 @@
         <option value="liter">Liter</option>
     </select>
 </div>
-<div class="unit-note" id="general_volume_note">355 mL = 12.00 US fl oz = 12.49 UK fl oz</div>
-<label for="added_sugar_grams">Added Sugar/Residual Carbs (grams, optional):</label>
-<input id="added_sugar_grams" step="0.1" type="number" value="0"/>
-<button onclick="calculateGeneralCalories()">Calculate General Calories</button>
-<div class="result" id="general_calories_output"></div>
+<div class="unit-note" id="volume_note_sg">500 mL = 16.91 US fl oz = 17.60 UK fl oz</div>
+<button onclick="calculateSG()">Calculate from SG</button>
+<div class="result" id="sg_output"></div>
+<canvas id="abvChartHydrometer" width="600" height="300"></canvas>
 
+<h2>Simple Sugar to ABV Estimator</h2>
+<label for="sugar_amount">Total Sugar Used:</label>
+<div class="volume-input-group">
+    <input id="sugar_amount" step="0.01" type="number" value="4018" oninput="updateSugarDisplay(); calculateSugarABV()"/>
+    <select id="sugar_unit" onchange="updateSugarDisplay(); calculateSugarABV()">
+        <option value="grams" selected>Grams</option>
+        <option value="kg">Kilograms</option>
+        <option value="lbs">Pounds (lbs)</option>
+        <option value="oz">Ounces (oz)</option>
+        <option value="us_cups">US Cups</option>
+        <option value="uk_cups">UK Cups</option>
+    </select>
+</div>
+<div class="unit-note" id="sugar_note">3565 g = 3.57 kg = 7.86 lbs = 125.8 oz</div>
+<label for="volume_liters">Total Liquid Volume:</label>
+<div class="volume-input-group">
+    <input id="volume_liters" step="0.01" type="number" value="25" oninput="updateBatchVolumeDisplay(); calculateSugarABV()"/>
+    <select id="batch_volume_unit" onchange="updateBatchVolumeDisplay(); calculateSugarABV()">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quart</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter" selected>Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="batch_volume_note">25 L = 6.60 US gal = 5.50 UK gal</div>
+<label for="conversion_factor">Sugar per 1% ABV (g/L):</label>
+<input id="conversion_factor" step="0.01" type="number" value="16.83" oninput="calculateSugarABV()"/>
+<button onclick="calculateSugarABV()">Estimate ABV</button>
+<div class="result" id="sugar_abv_output"></div>
+
+<h2>Target ABV to Sugar Requirement</h2>
+<label for="target_abv">Desired ABV (%):</label>
+<input id="target_abv" step="0.01" type="number" value="9.55" oninput="calculateRequiredSugar()"/>
+<label for="target_volume">Batch Volume:</label>
+<div class="volume-input-group">
+    <input id="target_volume" step="0.01" type="number" value="25" oninput="updateTargetVolumeDisplay(); calculateRequiredSugar()"/>
+    <select id="target_volume_unit" onchange="updateTargetVolumeDisplay(); calculateRequiredSugar()">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quart</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter" selected>Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="target_volume_note">25 L = 6.60 US gal = 5.50 UK gal</div>
+<label for="target_factor">Sugar per 1% ABV (g/L):</label>
+<input id="target_factor" step="0.01" type="number" value="16.83" oninput="calculateRequiredSugar()"/>
+<button onclick="calculateRequiredSugar()">Calculate Required Sugar</button>
+<div class="result" id="required_sugar_output"></div>
+
+<h2>Priming Sugar Calculator</h2>
+<label for="prime_volume">Batch Volume:</label>
+<div class="volume-input-group">
+    <input id="prime_volume" step="0.01" type="number" value=".500" oninput="updatePrimeVolumeDisplay(); calculatePrimingSugar()"/>
+    <select id="prime_volume_unit" onchange="updatePrimeVolumeDisplay(); calculatePrimingSugar()">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quart</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter" selected>Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="prime_volume_note">25 L = 6.60 US gal = 5.50 UK gal</div>
+<label for="co2_volumes">Desired CO2 Volumes:</label>
+<input id="co2_volumes" step="0.1" type="number" value="2.5" oninput="calculatePrimingSugar()"/>
+<label for="current_temp">Current Temperature (°C):</label>
+<input id="current_temp" step="0.1" type="number" value="20" oninput="calculatePrimingSugar()"/>
+<label for="sugar_type">Sugar Type:</label>
+<select id="sugar_type" onchange="calculatePrimingSugar()">
+    <option value="table">Table Sugar (Sucrose)</option>
+    <option value="corn">Corn Sugar (Dextrose)</option>
+    <option value="dme">Dry Malt Extract</option>
+    <option value="honey">Honey</option>
+</select>
+<button onclick="calculatePrimingSugar()">Calculate Priming Sugar</button>
+<div class="result" id="priming_output"></div>
+
+<h2>Dilution Calculator</h2>
+<label for="current_abv">Current ABV (%):</label>
+<input id="current_abv" step="0.01" type="number" value="60" oninput="calculateDilution()"/>
+<label for="current_volume">Current Volume:</label>
+<div class="volume-input-group">
+    <input id="current_volume" step="0.01" type="number" value="1" oninput="updateCurrentVolumeDisplay(); calculateDilution()"/>
+    <select id="current_volume_unit" onchange="updateCurrentVolumeDisplay(); calculateDilution()">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quart</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter" selected>Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="current_volume_note">20 L = 5.28 US gal = 4.40 UK gal</div>
+<label for="target_abv_dilution">Target ABV (%):</label>
+<input id="target_abv_dilution" step="0.01" type="number" value="40" oninput="calculateDilution()"/>
+<button onclick="calculateDilution()">Calculate Water Needed</button>
+<div class="result" id="dilution_output"></div>
+
+<h2>Blending Calculator</h2>
+<label for="batch1_abv">Batch 1 ABV (%):</label>
+<input id="batch1_abv" step="0.01" type="number" value="40" oninput="calculateBlending()"/>
+<label for="batch1_volume">Batch 1 Volume:</label>
+<div class="volume-input-group">
+    <input id="batch1_volume" step="0.01" type="number" value="0.300" oninput="updateBatch1VolumeDisplay(); calculateBlending()"/>
+    <select id="batch1_volume_unit" onchange="updateBatch1VolumeDisplay(); calculateBlending()">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quart</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter" selected>Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="batch1_volume_note">15 L = 3.96 US gal = 3.30 UK gal</div>
+<label for="batch2_abv">Batch 2 ABV (%):</label>
+<input id="batch2_abv" step="0.01" type="number" value="9.55" oninput="calculateBlending()"/>
+<label for="batch2_volume">Batch 2 Volume:</label>
+<div class="volume-input-group">
+    <input id="batch2_volume" step="0.01" type="number" value=".700" oninput="updateBatch2VolumeDisplay(); calculateBlending()"/>
+    <select id="batch2_volume_unit" onchange="updateBatch2VolumeDisplay(); calculateBlending()">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quart</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter" selected>Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="batch2_volume_note">10 L = 2.64 US gal = 2.20 UK gal</div>
+<button onclick="calculateBlending()">Calculate Blend Result</button>
+<div class="result" id="blending_output"></div>
 
 <script>
         // Theme management
@@ -533,6 +535,21 @@
         function convertFromGrams(valueInGrams, targetUnit) {
             return valueInGrams / sugarConversions[targetUnit];
         }
+
+        // Common volume unit options for all dropdowns
+        const commonVolumeOptions = `
+            <option value="ml">mL</option>
+            <option value="us_fl_oz">US fl oz</option>
+            <option value="uk_fl_oz">UK fl oz</option>
+            <option value="us_cup">US cup</option>
+            <option value="us_pint">US pint</option>
+            <option value="uk_pint">UK pint</option>
+            <option value="us_quart">US quart</option>
+            <option value="uk_quart">UK quart</option>
+            <option value="us_gallon">US gallon</option>
+            <option value="uk_gallon">UK gallon</option>
+            <option value="liter">Liter</option>
+        `;
 
         function updateSugarDisplay() {
             const value = parseFloat(document.getElementById("sugar_amount").value) || 0;
@@ -1250,6 +1267,44 @@
             return caloriesFromAlcohol + caloriesFromSugar;
         }
 
+        // Default sugar concentrations in g/L for different drink types
+        const defaultSugarConcentrationsGL = {
+            pure_spirits: 0,
+            wine: 10, // g/L
+            beer_cider: 10, // g/L
+            liqueur_sweetened: 150 // g/L
+        };
+
+        function updateGeneralCalorieDefaults() {
+            const drinkType = document.getElementById("general_drink_type").value;
+            const volumeInput = parseFloat(document.getElementById("general_volume_input").value);
+            const volumeUnit = document.getElementById("general_volume_unit").value;
+            let addedSugarInput = document.getElementById("added_sugar_grams");
+
+            const volumeLiters = volumeUnit === 'liter' ? volumeInput : convertToMl(volumeInput, volumeUnit) / 1000;
+
+            if (isNaN(volumeLiters) || volumeLiters <= 0) {
+                addedSugarInput.value = 0;
+                addedSugarInput._lastDefaultValue = 0; // Ensure last default is also 0
+                return;
+            }
+
+            const defaultSugarGL = defaultSugarConcentrationsGL[drinkType];
+            const calculatedDefaultSugarGrams = defaultSugarGL * volumeLiters;
+
+            // Always update to 0 for pure spirits, otherwise use the dynamic default logic
+            if (drinkType === 'pure_spirits') {
+                addedSugarInput.value = 0;
+                addedSugarInput._lastDefaultValue = 0;
+            } else if (addedSugarInput.value === "" || parseFloat(addedSugarInput.value) === 0 || addedSugarInput._lastDefaultValue === undefined || addedSugarInput._lastDefaultValue === parseFloat(addedSugarInput.value)) {
+                addedSugarInput.value = calculatedDefaultSugarGrams.toFixed(1);
+            }
+            addedSugarInput._lastDefaultValue = calculatedDefaultSugarGrams.toFixed(1); // Store the last default value set by the system
+            
+            calculateGeneralCalories(); // Recalculate calories after updating default
+        }
+
+
         function calculateGeneralCalories() {
             const drinkType = document.getElementById("general_drink_type").value;
             const abv = parseFloat(document.getElementById("general_abv").value);
@@ -1280,17 +1335,55 @@
         // Initialize displays on page load
         window.onload = function() {
             loadTheme(); // Load theme preference
+            // Set common volume options for all relevant dropdowns
+            document.getElementById("volume_unit").innerHTML = commonVolumeOptions;
+            document.getElementById("volume_unit_sg").innerHTML = commonVolumeOptions;
+            document.getElementById("batch_volume_unit").innerHTML = commonVolumeOptions;
+            document.getElementById("target_volume_unit").innerHTML = commonVolumeOptions;
+            document.getElementById("prime_volume_unit").innerHTML = commonVolumeOptions;
+            document.getElementById("current_volume_unit").innerHTML = commonVolumeOptions;
+            document.getElementById("batch1_volume_unit").innerHTML = commonVolumeOptions;
+            document.getElementById("batch2_volume_unit").innerHTML = commonVolumeOptions;
+            document.getElementById("general_volume_unit").innerHTML = commonVolumeOptions;
+
+            // Re-select default options after setting innerHTML
+            document.getElementById("volume_unit").value = "ml";
+            document.getElementById("volume_unit_sg").value = "ml";
+            document.getElementById("batch_volume_unit").value = "liter";
+            document.getElementById("target_volume_unit").value = "liter";
+            document.getElementById("prime_volume_unit").value = "liter";
+            document.getElementById("current_volume_unit").value = "liter";
+            document.getElementById("batch1_volume_unit").value = "liter";
+            document.getElementById("batch2_volume_unit").value = "liter";
+            document.getElementById("general_volume_unit").value = "ml";
+
+
+            // Trigger initial calculations for all sections
             updateVolumeDisplay();
+            calculate();
+
             updateVolumeDisplaySG();
-            updateSugarDisplay(); // Added this to initialize sugar display
+            calculateSG();
+
+            updateSugarDisplay();
             updateBatchVolumeDisplay();
+            calculateSugarABV();
+
             updateTargetVolumeDisplay();
+            calculateRequiredSugar();
+
             updatePrimeVolumeDisplay(); 
+            calculatePrimingSugar();
+
             updateCurrentVolumeDisplay(); 
+            calculateDilution();
+
             updateBatch1VolumeDisplay(); 
             updateBatch2VolumeDisplay(); 
-            updateGeneralVolumeDisplay(); // Initialize the new general volume display
-            calculateGeneralCalories(); // Calculate initial values for the general calculator
+            calculateBlending();
+
+            updateGeneralVolumeDisplay(); 
+            updateGeneralCalorieDefaults(); // This will set initial default sugar and then call calculateGeneralCalories
         };
 </script>
 </body>
