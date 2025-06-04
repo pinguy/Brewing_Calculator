@@ -306,6 +306,7 @@
     <div class="unit-note" id="volume_note">500 mL = 16.91 US fl oz = 17.60 UK fl oz</div>
     <button onclick="calculateRefractometerAndEnableUpdates()">Calculate</button>
     <div class="result" id="output"></div>
+    <!-- Removed <canvas id="abvChartRefractometer" width="600" height="300"></canvas> -->
 </div>
 
 <h2>Traditional Hydrometer (SG) Calculator</h2>
@@ -341,7 +342,6 @@
         <!-- Dynamic readings will be added here -->
     </div>
     <button onclick="addSgReadingField()">Add New Reading</button>
-    <!-- Removed the "Output All Data" button as requested -->
 </div>
 
 <h2>Simple Sugar to ABV Estimator</h2>
@@ -517,7 +517,7 @@
     </div>
     <div class="unit-note" id="batch1_volume_note">15 L = 3.96 US gal = 3.30 UK gal</div>
     <label for="batch2_abv">Batch 2 ABV (%):</label>
-    <input id="batch2_abv" step="0.01" type="number" value="9.55"/>
+    <input id="batch2_abv" step="0.01" type="number" value="11.5"/>
     <label for="batch2_volume">Batch 2 Volume:</label>
     <div class="volume-input-group">
         <input id="batch2_volume" step="0.01" type="number" value="700"/>
@@ -755,29 +755,30 @@
             let chart;
 
             if (canvasId === 'abvChartRefractometer') {
-                if (abvChartRefractometer) abvChartRefractometer.destroy();
-                chart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels, // Use provided labels
-                        datasets: [{
-                            label: 'SG Progress',
-                            data: sgVals,
-                            borderColor: 'teal',
-                            fill: false,
-                            tension: 0.1
-                        }]
-                    },
-                    options: {
-                        plugins: {
-                            title: { display: true, text: `Estimated ABV: ${abvVal}%` }
-                        },
-                        scales: {
-                            y: { beginAtZero: false }
-                        }
-                    }
-                });
-                abvChartRefractometer = chart;
+                // Chart for refractometer is removed, so this block is no longer needed
+                // if (abvChartRefractometer) abvChartRefractometer.destroy();
+                // chart = new Chart(ctx, {
+                //     type: 'line',
+                //     data: {
+                //         labels: labels, // Use provided labels
+                //         datasets: [{
+                //             label: 'SG Progress',
+                //             data: sgVals,
+                //             borderColor: 'teal',
+                //             fill: false,
+                //             tension: 0.1
+                //         }]
+                //     },
+                //     options: {
+                //         plugins: {
+                //             title: { display: true, text: `Estimated ABV: ${abvVal}%` }
+                //         },
+                //         scales: {
+                //             y: { beginAtZero: false }
+                //         }
+                //     }
+                // });
+                // abvChartRefractometer = chart;
             } else if (canvasId === 'abvChartHydrometer') {
                 if (abvChartHydrometer) abvChartHydrometer.destroy();
                 chart = new Chart(ctx, {
@@ -821,10 +822,7 @@
             if (isNaN(ogBrix) || isNaN(fgBrix) || isNaN(wcf) || isNaN(volumeMl)) {
                  document.getElementById("output").innerHTML =
                     '<span class="active">Please enter valid numeric values for Brix, WCF, and Volume.</span>';
-                if (typeof abvChartRefractometer !== 'undefined' && abvChartRefractometer) {
-                    abvChartRefractometer.destroy();
-                    abvChartRefractometer = null;
-                }
+                // No chart to destroy for refractometer, so removed the chart.destroy() call here.
                 return;
             }
 
@@ -918,7 +916,8 @@
                 <div class="${statusClass}">${statusText}</div>
             `;
 
-            updateChart('abvChartRefractometer', [og_sg, FG], abv_std.toFixed(2));
+            // Removed chart update for refractometer
+            // updateChart('abvChartRefractometer', [og_sg, FG], abv_std.toFixed(2));
         }
 
         let sgReadingCounter = 0; // To give unique IDs to new fields
@@ -966,7 +965,7 @@
         // Helper function to get all current SG calculator stats
         function getSgCalculatorStats() {
             const og_sg = parseFloat(document.getElementById("og_sg").value);
-            let fg_sg_current = parseFloat(document.getElementById("fg_sg").value); // The initial FG input
+            const initial_fg_sg = parseFloat(document.getElementById("fg_sg").value); // Store initial FG
 
             const chartLabels = ['Original Gravity'];
             const chartData = [og_sg];
@@ -982,34 +981,38 @@
                     chartLabels.push(dayLabel);
                     chartData.push(currentGravity);
                     allReadings.push({ label: dayLabel, value: currentGravity });
-                    fg_sg_current = currentGravity; // Update fg_sg_current to the most recent reading
                 }
             });
 
-            // Ensure the initial FG is included if no dynamic readings or if it's different from the last dynamic reading
-            if (dynamicReadingDivs.length === 0 || (allReadings.length > 0 && allReadings[allReadings.length - 1].value !== parseFloat(document.getElementById("fg_sg").value))) {
-                chartLabels.push('Final Gravity');
-                chartData.push(parseFloat(document.getElementById("fg_sg").value));
-                allReadings.push({ label: 'Final Gravity', value: parseFloat(document.getElementById("fg_sg").value) });
-                fg_sg_current = parseFloat(document.getElementById("fg_sg").value);
+            // Determine the final gravity to use for calculations and display
+            // This will be the last reading in the chartData array, which includes dynamic readings
+            let fg_sg_final = chartData[chartData.length - 1];
+
+            // If no dynamic readings were added, ensure the initial FG input is considered the final reading
+            // This condition checks if only OG is present in chartData (meaning no dynamic readings were added yet)
+            if (chartData.length === 1 && dynamicReadingDivs.length === 0) {
+                chartLabels.push('Final Gravity'); // Add 'Final Gravity' label for the initial FG input
+                chartData.push(initial_fg_sg);
+                allReadings.push({ label: 'Final Gravity', value: initial_fg_sg });
+                fg_sg_final = initial_fg_sg; // Use the initial FG input as the final gravity
             }
 
 
-            const abv_std = (og_sg - fg_sg_current) * 131.25;
-            const abv_alt = ((76.08 * (og_sg - fg_sg_current)) / (1.775 - og_sg)) * (fg_sg_current / 0.794);
-            const residualSugarGL = calculateResidualSugar(fg_sg_current);
-            const attenuation = (og_sg - 1) !== 0 ? ((og_sg - fg_sg_current) / (og_sg - 1)) * 100 : 0;
+            const abv_std = (og_sg - fg_sg_final) * 131.25;
+            const abv_alt = ((76.08 * (og_sg - fg_sg_final)) / (1.775 - og_sg)) * (fg_sg_final / 0.794);
+            const residualSugarGL = calculateResidualSugar(fg_sg_final);
+            const attenuation = (og_sg - 1) !== 0 ? ((og_sg - fg_sg_final) / (og_sg - 1)) * 100 : 0;
             const final_target_FG = 1.0001;
             let fermentation_progress = 0;
             if ((og_sg - final_target_FG) !== 0) {
-                fermentation_progress = ((og_sg - fg_sg_current) / (og_sg - final_target_FG)) * 100;
-            } else if (og_sg <= fg_sg_current) {
-                fermentation_progress = (fg_sg_current >= final_target_FG && og_sg >= final_target_FG) ? 100 : 0;
+                fermentation_progress = ((og_sg - fg_sg_final) / (og_sg - final_target_FG)) * 100;
+            } else if (og_sg <= fg_sg_final) {
+                fermentation_progress = (fg_sg_final >= final_target_FG && og_sg >= final_target_FG) ? 100 : 0;
             }
 
             return {
                 og_sg: og_sg,
-                fg_sg: fg_sg_current,
+                fg_sg: fg_sg_final, // This now correctly reflects the last reading
                 abv_std: abv_std,
                 abv_alt: abv_alt,
                 attenuation: attenuation,
@@ -1088,55 +1091,6 @@
                 <div class="${statusClass}">${statusText}</div>
             `;
             updateChart('abvChartHydrometer', stats.chartData, stats.abv_std.toFixed(2), stats.chartLabels);
-        }
-
-        function outputHydrometerData() {
-            const stats = getSgCalculatorStats(); // Get all stats and data
-            const volumeInput = parseFloat(document.getElementById("volume_input_sg").value);
-            const volumeUnit = document.getElementById("volume_unit_sg").value;
-            const volumeMl = convertToMl(volumeInput, volumeUnit);
-
-            const residualSugarInVolume = (stats.residualSugarGL * volumeMl) / 1000;
-            const alcoholAndSugarCalories = (volumeMl * (stats.abv_std / 100) * 0.789) * 7 + (residualSugarInVolume * 4);
-            const sweetnessPercentage = calculateSweetnessPercentage(stats.residualSugarGL);
-            const sweetness = getSweetnessClassification(stats.fg_sg, Math.max(stats.abv_std, stats.abv_alt));
-            const unitDisplayText = getUnitDisplayText(volumeUnit);
-            const volumeDisplayValue = volumeUnit === 'ml' ? volumeMl.toFixed(0) : volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
-
-
-            let outputHtml = '<h3>Hydrometer Data & Statistics Output</h3>';
-            outputHtml += '<div class="result">'; // Reuse result styling for the output block
-
-            outputHtml += `<h4>Recorded Gravity Readings:</h4>`;
-            outputHtml += `<ul>`;
-            stats.allReadings.forEach(reading => {
-                outputHtml += `<li><strong>${reading.label}:</strong> ${reading.value.toFixed(3)}</li>`;
-            });
-            outputHtml += `</ul>`;
-
-            outputHtml += `<h4>Calculated Statistics:</h4>`;
-            outputHtml += `<p><strong>Original Gravity (OG):</strong> ${stats.og_sg.toFixed(3)}</p>`;
-            outputHtml += `<p><strong>Final Gravity (FG):</strong> ${stats.fg_sg.toFixed(3)} (based on most recent reading)</p>`;
-            outputHtml += `<p><strong>ABV (Standard Formula):</strong> ${stats.abv_std.toFixed(2)}%</p>`;
-            outputHtml += `<p><strong>ABV (Alternate Formula):</strong> ${stats.abv_alt.toFixed(2)}%</p>`;
-            outputHtml += `<p><strong>Apparent Attenuation:</strong> ${stats.attenuation.toFixed(2)}%</p>`;
-            outputHtml += `<p><strong>Residual Sugar:</strong> ${stats.residualSugarGL.toFixed(1)} g/L (${residualSugarInVolume.toFixed(1)}g in ${volumeDisplayValue}${unitDisplayText})</p>`;
-            outputHtml += `<p><strong>Sweetness Level:</strong> ${sweetnessPercentage.toFixed(0)}%</p>`;
-            outputHtml += `<p><strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText} for Alcohol & Sugar:</strong> ${alcoholAndSugarCalories.toFixed(0)} Kcal</p>`;
-            outputHtml += `<p><strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})</p>`;
-            outputHtml += `<p><strong>Fermentation Progress:</strong> ${stats.fermentation_progress.toFixed(1)}%</p>`;
-
-            outputHtml += '</div>'; // Close result div
-
-            // Create a new div to hold the output, or update an existing one
-            let outputDiv = document.getElementById('full_hydrometer_output');
-            if (!outputDiv) {
-                outputDiv = document.createElement('div');
-                outputDiv.id = 'full_hydrometer_output';
-                outputDiv.className = 'calculator-section'; // Apply section styling
-                document.body.appendChild(outputDiv); // Add to the body
-            }
-            outputDiv.innerHTML = outputHtml;
         }
 
 
