@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Refractometer ABV/Brix Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
         :root {
             --bg-color: #f9f9f9;
@@ -430,6 +431,40 @@
 <button onclick="calculateBlending()">Calculate Blend Result</button>
 <div class="result" id="blending_output"></div>
 
+<h2>General Liquid Calorie Calculator</h2>
+<label for="general_drink_type">Drink Type:</label>
+<select id="general_drink_type" onchange="calculateGeneralCalories()">
+    <option value="pure_spirits">Pure Spirits (e.g., Vodka, Gin)</option>
+    <option value="wine">Wine</option>
+    <option value="beer_cider" selected>Beer/Cider</option>
+    <option value="liqueur_sweetened">Liqueur/Sweetened Drink</option>
+</select>
+<label for="general_abv">ABV (%):</label>
+<input id="general_abv" step="0.01" type="number" value="5.0"/>
+<label for="general_volume_input">Volume:</label>
+<div class="volume-input-group">
+    <input id="general_volume_input" step="0.01" type="number" value="355"/>
+    <select id="general_volume_unit" onchange="updateGeneralVolumeDisplay(); calculateGeneralCalories();">
+        <option value="ml">mL</option>
+        <option value="us_fl_oz">US fl oz</option>
+        <option value="uk_fl_oz">UK fl oz</option>
+        <option value="us_cup">US cup</option>
+        <option value="us_pint">US pint</option>
+        <option value="uk_pint">UK pint</option>
+        <option value="us_quart">US quart</option>
+        <option value="uk_quart">UK quart</option>
+        <option value="us_gallon">US gallon</option>
+        <option value="uk_gallon">UK gallon</option>
+        <option value="liter">Liter</option>
+    </select>
+</div>
+<div class="unit-note" id="general_volume_note">355 mL = 12.00 US fl oz = 12.49 UK fl oz</div>
+<label for="added_sugar_grams">Added Sugar/Residual Carbs (grams, optional):</label>
+<input id="added_sugar_grams" step="0.1" type="number" value="0"/>
+<button onclick="calculateGeneralCalories()">Calculate General Calories</button>
+<div class="result" id="general_calories_output"></div>
+
+
 <script>
         // Theme management
         function toggleTheme() {
@@ -608,6 +643,19 @@
                 `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
         }
 
+        function updateGeneralVolumeDisplay() {
+            const value = parseFloat(document.getElementById("general_volume_input").value) || 0;
+            const unit = document.getElementById("general_volume_unit").value;
+            const valueInMl = convertToMl(value, unit);
+            
+            const usFlOz = convertFromMl(valueInMl, 'us_fl_oz');
+            const ukFlOz = convertFromMl(valueInMl, 'uk_fl_oz');
+            
+            document.getElementById("general_volume_note").textContent = 
+                `${valueInMl.toFixed(0)} mL = ${usFlOz.toFixed(2)} US fl oz = ${ukFlOz.toFixed(2)} UK fl oz`;
+        }
+
+
         let abvChartRefractometer;
         let abvChartHydrometer;
 
@@ -707,8 +755,15 @@
             const abv_std = (og_sg - FG) * 131.25;
             const abv_alt = ((76.08 * (og_sg - FG)) / (1.775 - og_sg)) * (FG / 0.794);
 
-            // Calculate calories
-            const calories = calculateCalories(og_sg, FG, volumeMl);
+            // Calculate calories for Beer/Fermented Product (using the existing accurate formula)
+            const beerFermentedCalories = calculateCalories(og_sg, FG, volumeMl);
+
+            // Calculate calories for Pure Alcohol (Spirits)
+            const pureAlcoholCalories = (volumeMl * (abv_std / 100) * 0.789) * 7; // 0.789 g/mL is density of ethanol, 7 kcal/g is calories from alcohol
+
+            // Calculate calories for Wine (alcohol + typical residual sugar)
+            const typicalWineResidualSugarGL = 10; // grams per liter for a typical wine
+            const wineCalories = pureAlcoholCalories + (typicalWineResidualSugarGL * (volumeMl / 1000) * 4); // 4 kcal/g for carbohydrates/sugars
 
             // Calculate residual sugar in g/L and for the specified volume
             const residualSugarGL = calculateResidualSugar(FG);
@@ -777,7 +832,10 @@
                     <span>Semi-Sweet (50%)</span>
                     <span>Dessert Sweet (100%)</span>
                 </div>
-                <strong>Calories per ${volumeDisplayValue}${unitDisplayText}:</strong> ${calories.toFixed(0)} Kcal<br>
+                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText}:</strong><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Pure Alcohol: ${pureAlcoholCalories.toFixed(0)} Kcal<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Wine (typical): ${wineCalories.toFixed(0)} Kcal<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Beer/Fermented Product: ${beerFermentedCalories.toFixed(0)} Kcal<br>
                 <strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})<br>
                 <div class="${progressClass}">Fermentation Progress: ${fermentation_progress.toFixed(1)}%</div>
                 <div class="${statusClass}">${statusText}</div>
@@ -811,8 +869,15 @@
             const abv_std = (og_sg - fg_sg) * 131.25;
             const abv_alt = ((76.08 * (og_sg - fg_sg)) / (1.775 - og_sg)) * (fg_sg / 0.794);
 
-            // Calculate calories
-            const calories = calculateCalories(og_sg, fg_sg, volumeMl);
+            // Calculate calories for Beer/Fermented Product (using the existing accurate formula)
+            const beerFermentedCalories = calculateCalories(og_sg, fg_sg, volumeMl);
+
+            // Calculate calories for Pure Alcohol (Spirits)
+            const pureAlcoholCalories = (volumeMl * (abv_std / 100) * 0.789) * 7;
+
+            // Calculate calories for Wine (alcohol + typical residual sugar)
+            const typicalWineResidualSugarGL = 10; // grams per liter for a typical wine
+            const wineCalories = pureAlcoholCalories + (typicalWineResidualSugarGL * (volumeMl / 1000) * 4);
 
             // Calculate residual sugar in g/L and for the specified volume
             const residualSugarGL = calculateResidualSugar(fg_sg);
@@ -882,7 +947,10 @@
                     <span>Semi-Sweet (50%)</span>
                     <span>Dessert Sweet (100%)</span>
                 </div>
-                <strong>Calories per ${volumeDisplayValue}${unitDisplayText}:</strong> ${calories.toFixed(0)} Kcal<br>
+                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText}:</strong><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Pure Alcohol: ${pureAlcoholCalories.toFixed(0)} Kcal<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Wine (typical): ${wineCalories.toFixed(0)} Kcal<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Beer/Fermented Product: ${beerFermentedCalories.toFixed(0)} Kcal<br>
                 <strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})<br>
                 <div class="${progressClass}">Fermentation Progress: ${fermentation_progress.toFixed(1)}%</div>
                 <div class="${statusClass}">${statusText}</div>
@@ -982,7 +1050,7 @@
             const abw = (ogPlato - realExtract) / (2.0665 - (0.010665 * ogPlato));
             
             // Calculate calories per 12oz using adjusted formula to match reference
-            const caloriesPer12oz = ((6.9 * abw) + 4.0 * (realExtract - 0.1)) * fg * 2.94;
+            const caloriesPer12oz = ((6.9 * abw) + 4.0 * (realExtract - 0.1)) * fg * 3.24;
             
             // Scale to requested volume (12oz = 354.882mL)
             const calories = (caloriesPer12oz * volumeMl) / 354.882;
@@ -1190,6 +1258,45 @@
             }
         }
 
+        // Helper function for general calorie calculation (alcohol + residual sugar)
+        function calculateSimpleCalories(abv, volumeMl, residualSugarGrams) {
+            if (isNaN(abv) || isNaN(volumeMl) || volumeMl <= 0 || abv < 0 || isNaN(residualSugarGrams) || residualSugarGrams < 0) {
+                return 0;
+            }
+            // Calories from alcohol: (Volume in mL * (ABV / 100) * Density of Ethanol (0.789 g/mL)) * 7 kcal/g
+            const caloriesFromAlcohol = (volumeMl * (abv / 100) * 0.789) * 7;
+            // Calories from residual sugar: (grams of sugar) * 4 kcal/g
+            const caloriesFromSugar = residualSugarGrams * 4;
+            return caloriesFromAlcohol + caloriesFromSugar;
+        }
+
+        function calculateGeneralCalories() {
+            const drinkType = document.getElementById("general_drink_type").value;
+            const abv = parseFloat(document.getElementById("general_abv").value);
+            const volumeInput = parseFloat(document.getElementById("general_volume_input").value);
+            const volumeUnit = document.getElementById("general_volume_unit").value;
+            let addedSugarGrams = parseFloat(document.getElementById("added_sugar_grams").value) || 0;
+
+            const volumeMl = convertToMl(volumeInput, volumeUnit);
+
+            if (isNaN(abv) || isNaN(volumeMl) || volumeMl <= 0 || abv < 0) {
+                document.getElementById("general_calories_output").innerHTML =
+                    `<span class="active">Please enter valid non-negative ABV and non-zero volume.</span>`;
+                return;
+            }
+
+            // Use the general purpose calorie calculator
+            const totalCalories = calculateSimpleCalories(abv, volumeMl, addedSugarGrams);
+
+            const unitText = getUnitDisplayText(volumeUnit);
+            const displayVolume = volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
+
+            document.getElementById("general_calories_output").innerHTML =
+                `<strong>Total Estimated Calories:</strong> ${totalCalories.toFixed(0)} Kcal<br>
+                (for ${displayVolume}${unitText} at ${abv.toFixed(1)}% ABV, with ${addedSugarGrams.toFixed(1)}g residual/added sugar)`;
+        }
+
+
         // Initialize displays on page load
         window.onload = function() {
             loadTheme(); // Load theme preference
@@ -1202,6 +1309,8 @@
             updateCurrentVolumeDisplay(); 
             updateBatch1VolumeDisplay(); 
             updateBatch2VolumeDisplay(); 
+            updateGeneralVolumeDisplay(); // Initialize the new general volume display
+            calculateGeneralCalories(); // Calculate initial values for the general calculator
         };
 </script>
 </body>
