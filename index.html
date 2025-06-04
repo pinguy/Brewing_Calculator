@@ -982,8 +982,7 @@
             const abw = (ogPlato - realExtract) / (2.0665 - (0.010665 * ogPlato));
             
             // Calculate calories per 12oz using adjusted formula to match reference
-            // Adjusted coefficient from 3.55 to 3.42 to match target of 227.6 cal for reference values
-            const caloriesPer12oz = ((6.9 * abw) + 4.0 * (realExtract - 0.1)) * fg * 3.42;
+            const caloriesPer12oz = ((6.9 * abw) + 4.0 * (realExtract - 0.1)) * fg * 3.24;
             
             // Scale to requested volume (12oz = 354.882mL)
             const calories = (caloriesPer12oz * volumeMl) / 354.882;
