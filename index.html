@@ -755,19 +755,12 @@
             const abv_std = (og_sg - FG) * 131.25;
             const abv_alt = ((76.08 * (og_sg - FG)) / (1.775 - og_sg)) * (FG / 0.794);
 
-            // Calculate calories for Beer/Fermented Product (using the existing accurate formula)
-            const beerFermentedCalories = calculateCalories(og_sg, FG, volumeMl);
-
-            // Calculate calories for Pure Alcohol (Spirits)
-            const pureAlcoholCalories = (volumeMl * (abv_std / 100) * 0.789) * 7; // 0.789 g/mL is density of ethanol, 7 kcal/g is calories from alcohol
-
-            // Calculate calories for Wine (alcohol + typical residual sugar)
-            const typicalWineResidualSugarGL = 10; // grams per liter for a typical wine
-            const wineCalories = pureAlcoholCalories + (typicalWineResidualSugarGL * (volumeMl / 1000) * 4); // 4 kcal/g for carbohydrates/sugars
-
             // Calculate residual sugar in g/L and for the specified volume
             const residualSugarGL = calculateResidualSugar(FG);
             const residualSugarInVolume = (residualSugarGL * volumeMl) / 1000; // Convert to grams in the specified volume
+
+            // Calculate calories for Alcohol & Sugar
+            const alcoholAndSugarCalories = (volumeMl * (abv_std / 100) * 0.789) * 7 + (residualSugarInVolume * 4);
             
             // Calculate sweetness percentage for visual display (0-100%)
             const sweetnessPercentage = calculateSweetnessPercentage(residualSugarGL);
@@ -832,10 +825,7 @@
                     <span>Semi-Sweet (50%)</span>
                     <span>Dessert Sweet (100%)</span>
                 </div>
-                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText}:</strong><br>
-                &nbsp;&nbsp;&nbsp;&nbsp;Pure Alcohol: ${pureAlcoholCalories.toFixed(0)} Kcal<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;Wine (typical): ${wineCalories.toFixed(0)} Kcal<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;Beer/Fermented Product: ${beerFermentedCalories.toFixed(0)} Kcal<br>
+                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText} for Alcohol & Sugar:</strong> ${alcoholAndSugarCalories.toFixed(0)} Kcal<br>
                 <strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})<br>
                 <div class="${progressClass}">Fermentation Progress: ${fermentation_progress.toFixed(1)}%</div>
                 <div class="${statusClass}">${statusText}</div>
@@ -869,19 +859,12 @@
             const abv_std = (og_sg - fg_sg) * 131.25;
             const abv_alt = ((76.08 * (og_sg - fg_sg)) / (1.775 - og_sg)) * (fg_sg / 0.794);
 
-            // Calculate calories for Beer/Fermented Product (using the existing accurate formula)
-            const beerFermentedCalories = calculateCalories(og_sg, fg_sg, volumeMl);
-
-            // Calculate calories for Pure Alcohol (Spirits)
-            const pureAlcoholCalories = (volumeMl * (abv_std / 100) * 0.789) * 7;
-
-            // Calculate calories for Wine (alcohol + typical residual sugar)
-            const typicalWineResidualSugarGL = 10; // grams per liter for a typical wine
-            const wineCalories = pureAlcoholCalories + (typicalWineResidualSugarGL * (volumeMl / 1000) * 4);
-
             // Calculate residual sugar in g/L and for the specified volume
             const residualSugarGL = calculateResidualSugar(fg_sg);
             const residualSugarInVolume = (residualSugarGL * volumeMl) / 1000;
+
+            // Calculate calories for Alcohol & Sugar
+            const alcoholAndSugarCalories = (volumeMl * (abv_std / 100) * 0.789) * 7 + (residualSugarInVolume * 4);
             
             // Calculate sweetness percentage for visual display (0-100%)
             const sweetnessPercentage = calculateSweetnessPercentage(residualSugarGL);
@@ -947,10 +930,7 @@
                     <span>Semi-Sweet (50%)</span>
                     <span>Dessert Sweet (100%)</span>
                 </div>
-                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText}:</strong><br>
-                &nbsp;&nbsp;&nbsp;&nbsp;Pure Alcohol: ${pureAlcoholCalories.toFixed(0)} Kcal<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;Wine (typical): ${wineCalories.toFixed(0)} Kcal<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;Beer/Fermented Product: ${beerFermentedCalories.toFixed(0)} Kcal<br>
+                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText} for Alcohol & Sugar:</strong> ${alcoholAndSugarCalories.toFixed(0)} Kcal<br>
                 <strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})<br>
                 <div class="${progressClass}">Fermentation Progress: ${fermentation_progress.toFixed(1)}%</div>
                 <div class="${statusClass}">${statusText}</div>
