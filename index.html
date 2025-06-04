@@ -517,7 +517,7 @@
     </div>
     <div class="unit-note" id="batch1_volume_note">15 L = 3.96 US gal = 3.30 UK gal</div>
     <label for="batch2_abv">Batch 2 ABV (%):</label>
-    <input id="batch2_abv" step="0.01" type="number" value="11.5"/>
+    <input id="batch2_abv" step="0.01" type="number" value="9.55"/>
     <label for="batch2_volume">Batch 2 Volume:</label>
     <div class="volume-input-group">
         <input id="batch2_volume" step="0.01" type="number" value="700"/>
@@ -1048,7 +1048,8 @@
             let statusClass = "status ";
             let progressClass = "progress ";
 
-            if (stats.fermentation_progress >= 99 && stats.fg_sg <= (stats.final_target_FG + 0.001)) {
+            // Modified condition for "Fermentation Complete (dry)."
+            if (stats.fermentation_progress >= 99 && stats.fg_sg <= 1.000) { // Check if FG is 1.000 or below for "dry"
                 statusText = "Fermentation Complete (dry).";
                 statusClass += "complete";
                 progressClass += "complete";
@@ -1254,8 +1255,8 @@
 
                 document.getElementById("required_sugar_output").innerHTML =
                   //`<strong>Estimated OG (SG):</strong> ${estimated_og_sg.toFixed(3)}<br>` +
-                    `<strong>Required Sugar:</strong> ${sugar_required.toFixed(2)} grams (${sugar_required_oz.toFixed(2)} oz)<br>` +
-                    `(to reach ${abv.toFixed(2)}% ABV in ${displayVolume} ${unitText} [${volume.toFixed(1)}L] using ${factor}g/L per 1% ABV)`;
+                    `<strong>Required Sugar:</strong> ${sugar_required.toFixed(2)} grams (${sugar_required_oz.toFixed(2)} oz)<br>
+                    (to reach ${abv.toFixed(2)}% ABV in ${displayVolume} ${unitText} [${volume.toFixed(1)}L] using ${factor}g/L per 1% ABV)`;
             } else {
                 document.getElementById("required_sugar_output").innerHTML =
                     `<span class="active">Please enter valid non-zero ABV, volume, and conversion factor values.</span>`;
