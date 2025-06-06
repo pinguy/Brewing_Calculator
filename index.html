@@ -263,6 +263,62 @@
             color: var(--button-bg);
             font-weight: 500;
         }
+
+        /* Styling for dynamic blending inputs */
+        .batch-input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto; /* ABV, Volume, Remove button */
+            gap: 8px;
+            align-items: flex-end;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .batch-input-group label {
+            grid-column: span 3; /* Label spans all columns */
+            margin-top: 0;
+            margin-bottom: -5px; /* Adjust spacing */
+        }
+
+        .batch-input-group input[type="number"],
+        .batch-input-group input[type="text"] { /* Added text type for name input */
+            width: auto; /* Let grid handle width */
+            flex: none; /* Override flex properties if inherited */
+            margin-top: 0;
+        }
+
+        .batch-input-group .volume-input-group {
+            gap: 5px; /* Smaller gap for inner volume group */
+            margin-top: 0;
+        }
+
+        .remove-reading-button,
+        .batch-input-group .remove-batch-button {
+            background-color: #e74c3c; /* Red color for remove button */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-top: 0; /* Align with inputs */
+            height: fit-content; /* Fit height to content */
+        }
+
+        .remove-reading-button:hover,
+        .batch-input-group .remove-batch-button:hover {
+            opacity: 0.9;
+        }
+
+        .blending-container {
+            margin-top: 15px;
+        }
+
+        .blending-container .volume-input-group {
+            margin-top: 5px; /* Adjust spacing */
+        }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -429,8 +485,8 @@
             <option value="uk_pint">UK pint</option>
             <option value="us_quart">US quart</option>
             <option value="uk_quart">UK quarts</option>
-            <option value="us_gallon">US gallon</option>
-            <option value="uk_gallon">UK gallon</loption>
+            <option value="us_gallon">US gallon</loption>
+            <option value="uk_gallon">UK gallon</option>
             <option value="liter">Liter</option>
         </select>
     </div>
@@ -465,7 +521,7 @@
             <option value="us_pint">US pint</option>
             <option value="uk_pint">UK pint</option>
             <option value="us_quart">US quart</option>
-            <option value="uk_quart">UK quart</option>
+            <option value="uk_quart">UK quarts</option>
             <option value="us_gallon">US gallon</option>
             <option value="uk_gallon">UK gallon</option>
             <option value="liter" selected>Liter</option>
@@ -500,46 +556,10 @@
 
 <h2>Blending Calculator</h2>
 <div class="calculator-section">
-    <label for="batch1_abv">Batch 1 ABV (%):</label>
-    <input id="batch1_abv" step="0.01" type="number" value="40"/>
-    <label for="batch1_volume">Batch 1 Volume:</label>
-    <div class="volume-input-group">
-        <input id="batch1_volume" step="0.01" type="number" value="300"/>
-        <select id="batch1_volume_unit">
-            <option value="ml">mL</option>
-            <option value="us_fl_oz">US fl oz</option>
-            <option value="uk_fl_oz">UK fl oz</option>
-            <option value="us_cup">US cup</option>
-            <option value="us_pint">US pint</option>
-            <option value="uk_pint">UK pint</option>
-            <option value="us_quart">US quart</option>
-            <option value="uk_quart">UK quarts</option>
-            <option value="us_gallon">US gallon</option>
-            <option value="uk_gallon">UK gallon</option>
-            <option value="liter">Liter</option>
-        </select>
+    <div id="blending_batches_container">
+        <!-- Initial two batches will be added here by JavaScript -->
     </div>
-    <div class="unit-note" id="batch1_volume_note">15 L = 3.96 US gal = 3.30 UK gal</div>
-    <label for="batch2_abv">Batch 2 ABV (%):</label>
-    <input id="batch2_abv" step="0.01" type="number" value="9.55"/>
-    <label for="batch2_volume">Batch 2 Volume:</label>
-    <div class="volume-input-group">
-        <input id="batch2_volume" step="0.01" type="number" value="700"/>
-        <select id="batch2_volume_unit">
-            <option value="ml">mL</option>
-            <option value="us_fl_oz">US fl oz</option>
-            <option value="uk_fl_oz">UK fl oz</option>
-            <option value="us_cup">US cup</option>
-            <option value="us_pint">US pint</option>
-            <option value="uk_pint">UK pint</option>
-            <option value="us_quart">US quart</option>
-            <option value="uk_quart">UK quarts</option>
-            <option value="us_gallon">US gallon</option>
-            <option value="uk_gallon">UK gallon</option>
-            <option value="liter">Liter</option>
-        </select>
-    </div>
-    <div class="unit-note" id="batch2_volume_note">10 L = 2.64 US gal = 2.20 UK gal</div>
+    <button onclick="addBatchInput()">Add New Batch</button>
     <button onclick="calculateBlendingAndEnableUpdates()">Calculate Blend Result</button>
     <div class="result" id="blending_output"></div>
 </div>
@@ -725,30 +745,6 @@ if ('serviceWorker' in navigator) {
                 `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
         }
 
-        function updateBatch1VolumeDisplay() {
-            const value = parseFloat(document.getElementById("batch1_volume").value) || 0;
-            const unit = document.getElementById("batch1_volume_unit").value;
-            const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
-
-            const usGal = convertFromMl(valueInL * 1000, 'us_gallon');
-            const ukGal = convertFromMl(valueInL * 1000, 'uk_gallon');
-
-            document.getElementById("batch1_volume_note").textContent =
-                `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
-        }
-
-        function updateBatch2VolumeDisplay() {
-            const value = parseFloat(document.getElementById("batch2_volume").value) || 0;
-            const unit = document.getElementById("batch2_volume_unit").value;
-            const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
-
-            const usGal = convertFromMl(valueInL * 1000, 'us_gallon');
-            const ukGal = convertFromMl(valueInL * 1000, 'uk_gallon');
-
-            document.getElementById("batch2_volume_note").textContent =
-                `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
-        }
-
         function updateDilutionCalorieVolumeDisplay() {
             const value = parseFloat(document.getElementById("dilution_calorie_volume_input").value) || 0;
             const unit = document.getElementById("dilution_calorie_volume_unit").value;
@@ -761,6 +757,26 @@ if ('serviceWorker' in navigator) {
                 `${valueInMl.toFixed(0)} mL = ${usFlOz.toFixed(2)} US fl oz = ${ukFlOz.toFixed(2)} UK fl oz`;
         }
 
+        function updateBatchVolumeDisplayDynamic(batchId) {
+            const volumeInput = document.getElementById(`batch_volume_${batchId}`);
+            const volumeUnitSelect = document.getElementById(`batch_volume_unit_${batchId}`);
+
+            if (!volumeInput || !volumeUnitSelect) return;
+
+            const value = parseFloat(volumeInput.value) || 0;
+            const unit = volumeUnitSelect.value;
+            const valueInL = unit === 'liter' ? value : convertToMl(value, unit) / 1000;
+
+            const usGal = convertFromMl(valueInL * 1000, 'us_gallon');
+            const ukGal = convertFromMl(valueInL * 1000, 'uk_gallon');
+
+            const noteElement = document.getElementById(`batch_volume_note_${batchId}`);
+            if (noteElement) {
+                noteElement.textContent =
+                    `${valueInL.toFixed(1)} L = ${usGal.toFixed(2)} US gal = ${ukGal.toFixed(2)} UK gal`;
+            }
+        }
+
 
         let abvChartRefractometer;
         let abvChartHydrometer;
@@ -769,32 +785,7 @@ if ('serviceWorker' in navigator) {
             const ctx = document.getElementById(canvasId).getContext('2d');
             let chart;
 
-            if (canvasId === 'abvChartRefractometer') {
-                // Chart for refractometer is removed, so this block is no longer needed
-                // if (abvChartRefractometer) abvChartRefractometer.destroy();
-                // chart = new Chart(ctx, {
-                //     type: 'line',
-                //     data: {
-                //         labels: labels, // Use provided labels
-                //         datasets: [{
-                //             label: 'SG Progress',
-                //             data: sgVals,
-                //             borderColor: 'teal',
-                //             fill: false,
-                //             tension: 0.1
-                //         }]
-                //     },
-                //     options: {
-                //         plugins: {
-                //             title: { display: true, text: `Estimated ABV: ${abvVal}%` }
-                //         },
-                //         scales: {
-                //             y: { beginAtZero: false }
-                //         }
-                //     }
-                // });
-                // abvChartRefractometer = chart;
-            } else if (canvasId === 'abvChartHydrometer') {
+            if (canvasId === 'abvChartHydrometer') {
                 if (abvChartHydrometer) abvChartHydrometer.destroy();
                 chart = new Chart(ctx, {
                     type: 'line',
@@ -966,34 +957,27 @@ if ('serviceWorker' in navigator) {
             inputGravity.value = '1.005'; // Default value
             inputGravity.oninput = calculateSG; // Update chart data on input
 
-            readingDiv.appendChild(labelDay);
-            readingDiv.appendChild(inputDay);
-            readingDiv.appendChild(labelGravity);
-            readingDiv.appendChild(inputGravity);
-
-            container.appendChild(readingDiv);
-
             const removeButton = document.createElement('button');
             removeButton.textContent = 'X';
             removeButton.className = 'remove-reading-button';
             removeButton.onclick = function() {
                 container.removeChild(readingDiv);
-                calculateHydrometer(); // Recalculate chart after removing a field
+                calculateSG(); // Recalculate chart after removing a field
             };
 
-            readingDiv.appendChild(inputDay);
+            readingDiv.appendChild(inputDay); // Appended in wrong order previously, fixed.
             readingDiv.appendChild(inputGravity);
-            readingDiv.appendChild(removeButton);
+            readingDiv.appendChild(removeButton); // Remove button now part of the readingDiv
             container.appendChild(readingDiv);
 
             // Re-calculate to update chart with new empty field or initial values
-            calculateHydrometer();
+            calculateSG();
         }
 
         // Helper function to get all current SG calculator stats
         function getSgCalculatorStats() {
             const og_sg = parseFloat(document.getElementById("og_sg").value);
-            const initial_fg_sg = parseFloat(document.getElementById("fg_sg").value); // Store initial FG
+            const initial_fg_sg_input_value = parseFloat(document.getElementById("fg_sg").value); // Get the value from the initial FG input field
 
             const chartLabels = ['Original Gravity'];
             const chartData = [og_sg];
@@ -1012,19 +996,16 @@ if ('serviceWorker' in navigator) {
                 }
             });
 
-            // Determine the final gravity to use for calculations and display
-            // This will be the last reading in the chartData array, which includes dynamic readings
-            let fg_sg_final = chartData[chartData.length - 1];
-
-            // If no dynamic readings were added, ensure the initial FG input is considered the final reading
-            // This condition checks if only OG is present in chartData (meaning no dynamic readings were added yet)
-            if (chartData.length === 1 && dynamicReadingDivs.length === 0) {
-                chartLabels.push('Final Gravity'); // Add 'Final Gravity' label for the initial FG input
-                chartData.push(initial_fg_sg);
-                allReadings.push({ label: 'Final Gravity', value: initial_fg_sg });
-                fg_sg_final = initial_fg_sg; // Use the initial FG input as the final gravity
+            let fg_sg_final;
+            if (chartData.length > 1) { // If there are dynamic readings, use the last one
+                fg_sg_final = chartData[chartData.length - 1];
+            } else { // If only OG is present (no dynamic readings), use the initial FG input value
+                fg_sg_final = initial_fg_sg_input_value;
+                // Add initial FG input to chart data and labels if no dynamic readings exist
+                chartLabels.push('Final Gravity');
+                chartData.push(initial_fg_sg_input_value);
+                allReadings.push({ label: 'Final Gravity', value: initial_fg_sg_input_value });
             }
-
 
             const abv_std = (og_sg - fg_sg_final) * 131.25;
             const abv_alt = ((76.08 * (og_sg - fg_sg_final)) / (1.775 - og_sg)) * (fg_sg_final / 0.794);
@@ -1040,7 +1021,7 @@ if ('serviceWorker' in navigator) {
 
             return {
                 og_sg: og_sg,
-                fg_sg: fg_sg_final, // This now correctly reflects the last reading
+                fg_sg: fg_sg_final, // This now correctly reflects the last reading or initial FG
                 abv_std: abv_std,
                 abv_alt: abv_alt,
                 attenuation: attenuation,
@@ -1098,9 +1079,16 @@ if ('serviceWorker' in navigator) {
             const unitDisplayText = getUnitDisplayText(volumeUnit);
             const volumeDisplayValue = volumeUnit === 'ml' ? volumeMl.toFixed(0) : volumeInput.toFixed(volumeInput % 1 === 0 ? 0 : 2);
 
+            // Determine the FG display value: if no dynamic readings, show the default input value
+            // Otherwise, show the calculated FG from the last reading.
+            const fgDisplayValue = document.querySelectorAll('#sg_readings_container > div').length === 0
+                                 ? parseFloat(document.getElementById("fg_sg").value).toFixed(3)
+                                 : stats.fg_sg.toFixed(3);
+
+
             document.getElementById("sg_output").innerHTML = `
                 <strong>Original Gravity (OG):</strong> ${stats.og_sg.toFixed(3)}<br>
-                <strong>Final Gravity (FG):</strong> ${stats.fg_sg.toFixed(3)} (based on most recent reading)<br>
+                <strong>Final Gravity (FG):</strong> ${fgDisplayValue} (based on most recent reading or default)<br>
                 <strong>ABV (Standard Formula):</strong> ${stats.abv_std.toFixed(2)}%<br>
                 <strong>ABV (Alternate Formula):</strong> ${stats.abv_alt.toFixed(2)}%<br>
                 <strong>Apparent Attenuation:</strong> ${stats.attenuation.toFixed(2)}%<br>
@@ -1419,43 +1407,158 @@ if ('serviceWorker' in navigator) {
                 (to dilute ${displayCurrentVolume} ${unitText} at ${currentAbv.toFixed(1)}% ABV to ${targetAbv.toFixed(1)}% ABV)`;
         }
 
-        function calculateBlending() {
-            const abv1 = parseFloat(document.getElementById("batch1_abv").value);
-            const volume1Input = parseFloat(document.getElementById("batch1_volume").value);
-            const volume1Unit = document.getElementById("batch1_volume_unit").value;
-            const abv2 = parseFloat(document.getElementById("batch2_abv").value);
-            const volume2Input = parseFloat(document.getElementById("batch2_volume").value);
-            const volume2Unit = document.getElementById("batch2_volume_unit").value;
+        let batchCounter = 0; // To give unique IDs to new blending fields
 
-            // Convert volumes to liters
-            const volume1L = volume1Unit === 'liter' ? volume1Input : convertToMl(volume1Input, volume1Unit) / 1000;
-            const volume2L = volume2Unit === 'liter' ? volume2Input : convertToMl(volume2Input, volume2Unit) / 1000;
+        function addBatchInput(initialAbv = 40, initialVolume = 300) {
+            batchCounter++;
+            const container = document.getElementById('blending_batches_container');
 
-            if (!isNaN(abv1) && !isNaN(volume1L) && !isNaN(abv2) && !isNaN(volume2L) &&
-                volume1L > 0 && volume2L > 0 && abv1 >=0 && abv2 >=0) { // allow 0 ABV for non-alcoholic component
+            const batchDiv = document.createElement('div');
+            batchDiv.className = 'batch-input-group';
+            batchDiv.dataset.batchId = batchCounter;
 
-                const totalVolume = volume1L + volume2L;
-                if (totalVolume <= 0) { // Should not happen if volume1L & volume2L > 0, but good practice
-                     document.getElementById("blending_output").innerHTML =
-                        `<span class="active">Total volume is zero or negative. Please check inputs.</span>`;
-                    return;
-                }
-                const blendedAbv = ((abv1 * volume1L) + (abv2 * volume2L)) / totalVolume;
+            // Name input field
+            const nameLabel = document.createElement('label');
+            nameLabel.htmlFor = `batch_name_${batchCounter}`;
+            nameLabel.textContent = `Batch ${batchCounter} Name:`;
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.id = `batch_name_${batchCounter}`;
+            nameInput.value = `Batch ${batchCounter}`; // Default value
+            nameInput.oninput = calculateBlending; // Recalculate on name change
 
-                const unitText1 = volume1Unit === 'liter' ? 'L' : getUnitDisplayText(volume1Unit).trim();
-                const displayVolume1 = volume1Input.toFixed(volume1Input % 1 === 0 ? 0 : 2);
-                const unitText2 = volume2Unit === 'liter' ? 'L' : getUnitDisplayText(volume2Unit).trim();
-                const displayVolume2 = volume2Input.toFixed(volume2Input % 1 === 0 ? 0 : 2);
+            const abvLabel = document.createElement('label');
+            abvLabel.htmlFor = `batch_abv_${batchCounter}`;
+            abvLabel.textContent = `Batch ${batchCounter} ABV (%):`;
+            const abvInput = document.createElement('input');
+            abvInput.type = 'number';
+            abvInput.step = '0.01';
+            abvInput.id = `batch_abv_${batchCounter}`;
+            abvInput.value = initialAbv;
+            abvInput.oninput = calculateBlending;
 
-                document.getElementById("blending_output").innerHTML =
-                    `<strong>Blended ABV:</strong> ${blendedAbv.toFixed(2)}%<br>
-                    <strong>Total Volume:</strong> ${totalVolume.toFixed(2)} Liters<br>
-                    (${displayVolume1} ${unitText1} at ${abv1.toFixed(1)}% ABV + ${displayVolume2} ${unitText2} at ${abv2.toFixed(1)}% ABV)`;
-            } else {
-                document.getElementById("blending_output").innerHTML =
-                    `<span class="active">Please enter valid non-zero volumes and non-negative ABVs for both batches.</span>`;
-            }
+            const volumeLabel = document.createElement('label');
+            volumeLabel.htmlFor = `batch_volume_${batchCounter}`;
+            volumeLabel.textContent = `Batch ${batchCounter} Volume:`;
+            const volumeInputGroup = document.createElement('div');
+            volumeInputGroup.className = 'volume-input-group';
+
+            const volumeInput = document.createElement('input');
+            volumeInput.type = 'number';
+            volumeInput.step = '0.01';
+            volumeInput.id = `batch_volume_${batchCounter}`;
+            volumeInput.value = initialVolume;
+            volumeInput.oninput = () => { updateBatchVolumeDisplayDynamic(batchCounter); calculateBlending(); };
+
+            const volumeUnitSelect = document.createElement('select');
+            volumeUnitSelect.id = `batch_volume_unit_${batchCounter}`;
+            volumeUnitSelect.innerHTML = commonVolumeOptions;
+            volumeUnitSelect.value = 'ml'; // Default unit
+            volumeUnitSelect.onchange = () => { updateBatchVolumeDisplayDynamic(batchCounter); calculateBlending(); };
+
+            volumeInputGroup.appendChild(volumeInput);
+            volumeInputGroup.appendChild(volumeUnitSelect);
+
+            const unitNote = document.createElement('div');
+            unitNote.className = 'unit-note';
+            unitNote.id = `batch_volume_note_${batchCounter}`;
+            unitNote.textContent = ''; // Will be updated by updateBatchVolumeDisplayDynamic
+
+            const removeButton = document.createElement('button');
+            removeButton.textContent = 'X';
+            removeButton.className = 'remove-batch-button';
+            removeButton.onclick = function() {
+                container.removeChild(batchDiv);
+                calculateBlending(); // Recalculate after removing a batch
+            };
+
+            batchDiv.appendChild(nameLabel); // Add name label
+            batchDiv.appendChild(nameInput); // Add name input
+            batchDiv.appendChild(abvLabel);
+            batchDiv.appendChild(abvInput);
+            batchDiv.appendChild(volumeLabel);
+            batchDiv.appendChild(volumeInputGroup);
+            batchDiv.appendChild(unitNote);
+            batchDiv.appendChild(removeButton); // Add remove button to the batch div
+
+            container.appendChild(batchDiv);
+
+            updateBatchVolumeDisplayDynamic(batchCounter); // Initial update for the new batch
+            calculateBlending(); // Recalculate blending with new batch
         }
+
+        function calculateBlending() {
+            const batchDivs = document.querySelectorAll('#blending_batches_container .batch-input-group');
+            let totalVolumeL = 0;
+            let totalAbvContribution = 0;
+            let isValid = true;
+
+            if (batchDivs.length === 0) {
+                document.getElementById("blending_output").innerHTML =
+                    `<span class="active">Please add at least one batch to blend.</span>`;
+                return;
+            }
+
+            batchDivs.forEach((batchDiv, index) => {
+                const batchId = batchDiv.dataset.batchId;
+                const nameInput = document.getElementById(`batch_name_${batchId}`); // Get name input
+                const abvInput = document.getElementById(`batch_abv_${batchId}`);
+                const volumeInput = document.getElementById(`batch_volume_${batchId}`);
+                const volumeUnitSelect = document.getElementById(`batch_volume_unit_${batchId}`);
+
+                const name = nameInput.value.trim() || `Batch ${batchId}`; // Get name or default
+                const abv = parseFloat(abvInput.value);
+                const volumeInputVal = parseFloat(volumeInput.value);
+                const volumeUnit = volumeUnitSelect.value;
+
+                const volumeL = volumeUnit === 'liter' ? volumeInputVal : convertToMl(volumeInputVal, volumeUnit) / 1000;
+
+                if (isNaN(abv) || isNaN(volumeL) || volumeL <= 0 || abv < 0) {
+                    isValid = false;
+                } else {
+                    totalAbvContribution += abv * volumeL;
+                    totalVolumeL += volumeL;
+                }
+            });
+
+            if (!isValid) {
+                document.getElementById("blending_output").innerHTML =
+                    `<span class="active">Please enter valid non-negative ABVs and non-zero volumes for all batches.</span>`;
+                return;
+            }
+
+            if (totalVolumeL <= 0) {
+                document.getElementById("blending_output").innerHTML =
+                    `<span class="active">Total volume is zero. Please enter valid non-zero volumes.</span>`;
+                return;
+            }
+
+            const blendedAbv = totalAbvContribution / totalVolumeL;
+
+            let outputHtml = `<strong>Blended ABV:</strong> ${blendedAbv.toFixed(2)}%<br>
+                              <strong>Total Volume:</strong> ${totalVolumeL.toFixed(2)} Liters<br>`;
+
+            batchDivs.forEach((batchDiv, index) => {
+                const batchId = batchDiv.dataset.batchId;
+                const nameInput = document.getElementById(`batch_name_${batchId}`);
+                const abvInput = document.getElementById(`batch_abv_${batchId}`);
+                const volumeInput = document.getElementById(`batch_volume_${batchId}`);
+                const volumeUnitSelect = document.getElementById(`batch_volume_unit_${batchId}`);
+
+                const name = nameInput.value.trim() || `Batch ${batchId}`; // Use name or default
+                const abv = parseFloat(abvInput.value);
+                const volumeInputVal = parseFloat(volumeInput.value);
+                const volumeUnit = volumeUnitSelect.value;
+
+                const unitText = volumeUnit === 'liter' ? 'L' : getUnitDisplayText(volumeUnit).trim();
+                const displayVolume = volumeInputVal.toFixed(volumeInputVal % 1 === 0 ? 0 : 2);
+
+                outputHtml += `(${displayVolume} ${unitText} of ${name} at ${abv.toFixed(1)}% ABV)<br>`;
+            });
+
+            document.getElementById("blending_output").innerHTML = outputHtml;
+        }
+
 
         // --- New functions to manage initial click and then enable on-the-fly updates ---
         let refractometerCalculatedOnce = false;
@@ -1539,12 +1642,8 @@ if ('serviceWorker' in navigator) {
         function calculateBlendingAndEnableUpdates() {
             calculateBlending();
             if (!blendingCalculatedOnce) {
-                document.getElementById("batch1_abv").oninput = calculateBlending;
-                document.getElementById("batch1_volume").oninput = () => { updateBatch1VolumeDisplay(); calculateBlending(); };
-                document.getElementById("batch1_volume_unit").onchange = () => { updateBatch1VolumeDisplay(); calculateBlending(); };
-                document.getElementById("batch2_abv").oninput = calculateBlending;
-                document.getElementById("batch2_volume").oninput = () => { updateBatch2VolumeDisplay(); calculateBlending(); };
-                document.getElementById("batch2_volume_unit").onchange = () => { updateBatch2VolumeDisplay(); calculateBlending(); };
+                // Event listeners for blending inputs are handled dynamically when they are added
+                // No need for a global 'once' flag here for input changes, as calculateBlending() is called by the individual input handlers
                 blendingCalculatedOnce = true;
             }
         }
@@ -1561,8 +1660,6 @@ if ('serviceWorker' in navigator) {
             document.getElementById("target_volume_unit").innerHTML = commonVolumeOptions;
             document.getElementById("prime_volume_unit").innerHTML = commonVolumeOptions;
             document.getElementById("current_volume_unit").innerHTML = commonVolumeOptions;
-            document.getElementById("batch1_volume_unit").innerHTML = commonVolumeOptions;
-            document.getElementById("batch2_volume_unit").innerHTML = commonVolumeOptions;
             document.getElementById("dilution_calorie_volume_unit").innerHTML = commonVolumeOptions;
 
 
@@ -1573,8 +1670,6 @@ if ('serviceWorker' in navigator) {
             document.getElementById("target_volume_unit").value = "liter";
             document.getElementById("prime_volume_unit").value = "ml"; /* Set to mL */
             document.getElementById("current_volume_unit").value = "liter";
-            document.getElementById("batch1_volume_unit").value = "ml"; /* Set to mL */
-            document.getElementById("batch2_volume_unit").value = "ml"; /* Set to mL */
             document.getElementById("dilution_calorie_volume_unit").value = "ml";
 
 
@@ -1587,8 +1682,6 @@ if ('serviceWorker' in navigator) {
             updatePrimeVolumeDisplay();
             updateDilutionCurrentVolumeDisplay();
             updateDilutionCalorieVolumeDisplay();
-            updateBatch1VolumeDisplay();
-            updateBatch2VolumeDisplay();
 
             // Clear initial results to ensure they are empty until first click
             document.getElementById("output").innerHTML = '';
@@ -1598,6 +1691,10 @@ if ('serviceWorker' in navigator) {
             document.getElementById("priming_output").innerHTML = '';
             document.getElementById("dilution_output").innerHTML = '';
             document.getElementById("blending_output").innerHTML = '';
+
+            // Add initial two batches for the blending calculator
+            addBatchInput(40, 300); // Batch 1 default values
+            addBatchInput(9.55, 700); // Batch 2 default values
         };
 </script>
 </body>
