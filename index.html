@@ -857,6 +857,9 @@ if ('serviceWorker' in navigator) {
             // Calculate calories for Alcohol & Sugar
             const alcoholAndSugarCalories = (volumeMl * (abv_std / 100) * 0.789) * 7 + (residualSugarInVolume * 4);
 
+            // Calculate alcohol units
+            const alcoholUnits = (abv_std * volumeMl) / 1000;
+
             // Calculate sweetness percentage for visual display (0-100%)
             const sweetnessPercentage = calculateSweetnessPercentage(residualSugarGL);
 
@@ -916,7 +919,8 @@ if ('serviceWorker' in navigator) {
                     <span>Semi-Sweet (50%)</span>
                     <span>Dessert Sweet (100%)</span>
                 </div>
-                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText} for Alcohol & Sugar:</strong> ${alcoholAndSugarCalories.toFixed(0)} Kcal<br>
+                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText}:</strong> ${alcoholAndSugarCalories.toFixed(0)} Kcal<br>
+                <strong>Alcohol Units per ${volumeDisplayValue}${unitDisplayText}:</strong> ${alcoholUnits.toFixed(2)} units<br>
                 <strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})<br>
                 <div class="${progressClass}">Fermentation Progress: ${fermentation_progress.toFixed(1)}%</div>
                 <div class="${statusClass}">${statusText}</div>
@@ -1051,6 +1055,8 @@ if ('serviceWorker' in navigator) {
             const alcoholAndSugarCalories = (volumeMl * (stats.abv_std / 100) * 0.789) * 7 + (residualSugarInVolume * 4);
             const sweetnessPercentage = calculateSweetnessPercentage(stats.residualSugarGL);
             const sweetness = getSweetnessClassification(stats.fg_sg, Math.max(stats.abv_std, stats.abv_alt));
+            // Calculate alcohol units
+            const alcoholUnits = (stats.abv_std * volumeMl) / 1000;
 
 
             let statusText = "";
@@ -1102,7 +1108,8 @@ if ('serviceWorker' in navigator) {
                     <span>Semi-Sweet (50%)</span>
                     <span>Dessert Sweet (100%)</span>
                 </div>
-                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText} for Alcohol & Sugar:</strong> ${alcoholAndSugarCalories.toFixed(0)} Kcal<br>
+                <strong>Estimated Calories per ${volumeDisplayValue}${unitDisplayText}:</strong> ${alcoholAndSugarCalories.toFixed(0)} Kcal<br>
+                <strong>Alcohol Units per ${volumeDisplayValue}${unitDisplayText}:</strong> ${alcoholUnits.toFixed(2)} units<br>
                 <strong>Sweetness Classification:</strong> <span class="sweetness">${sweetness.simple}</span> (${sweetness.detailed})<br>
                 <div class="${progressClass}">Fermentation Progress: ${stats.fermentation_progress.toFixed(1)}%</div>
                 <div class="${statusClass}">${statusText}</div>
@@ -1388,6 +1395,10 @@ if ('serviceWorker' in navigator) {
             // Calculate Kcal for the user-specified volume
             const specificKcal = (dilutionCalorieVolumeMl * (targetAbv / 100) * 0.789) * 7;
 
+            // Calculate alcohol units for the user-specified volume
+            const alcoholUnits = (targetAbv * dilutionCalorieVolumeMl) / 1000;
+
+
             const unitText = currentVolumeUnit === 'liter' ? 'L' : getUnitDisplayText(currentVolumeUnit).trim();
             const displayCurrentVolume = currentVolumeInput.toFixed(currentVolumeInput % 1 === 0 ? 0 : 2);
 
@@ -1404,6 +1415,7 @@ if ('serviceWorker' in navigator) {
                 <strong>Total Final Volume:</strong> ${totalVolumeL.toFixed(2)} Liters (${totalVolumeUsFlOz.toFixed(2)} US fl oz)<br>
                 <strong>Estimated Total Kcal:</strong> ${totalKcal.toFixed(0)} Kcal<br>
                 <strong>Estimated Kcal per ${dilutionCalorieVolumeDisplayValue}${dilutionCalorieUnitDisplayText}:</strong> ${specificKcal.toFixed(0)} Kcal<br>
+                <strong>Alcohol Units per ${dilutionCalorieVolumeDisplayValue}${dilutionCalorieUnitDisplayText}:</strong> ${alcoholUnits.toFixed(2)} units<br>
                 (to dilute ${displayCurrentVolume} ${unitText} at ${currentAbv.toFixed(1)}% ABV to ${targetAbv.toFixed(1)}% ABV)`;
         }
 
